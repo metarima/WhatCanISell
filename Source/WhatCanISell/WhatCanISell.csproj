@@ -1,0 +1,48 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    RimWorld 1.7 runs on .NET 10. Instead of needing the .NET 10 SDK, this project
+    compiles directly against the framework assemblies that ship with the game.
+    Override the paths with: dotnet build -p:RimWorldDir="..." -p:HarmonyDir="..."
+  -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <AssemblyName>WhatCanISell</AssemblyName>
+    <RootNamespace>WhatCanISell</RootNamespace>
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+    <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <DebugType>none</DebugType>
+    <OutputPath>..\..\1.7\Assemblies\</OutputPath>
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+    <NoWarn>$(NoWarn);CS1701;CS1702;MSB3277</NoWarn>
+
+    <RimWorldDir Condition="'$(RimWorldDir)' == ''">C:\Program Files (x86)\Steam\steamapps\common\RimWorld</RimWorldDir>
+    <HarmonyDir Condition="'$(HarmonyDir)' == ''">C:\Program Files (x86)\Steam\steamapps\workshop\content\294100\2009463077\1.7\Assemblies</HarmonyDir>
+    <ModDeployDir>$(RimWorldDir)\Mods\WhatCanISell</ModDeployDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <GameRef Include="Assembly-CSharp;UnityStubs;System.Private.CoreLib;System.Runtime;System.Collections;System.Linq" />
+    <Reference Include="@(GameRef)">
+      <HintPath>$(RimWorldDir)\%(Identity).dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="0Harmony">
+      <HintPath>$(HarmonyDir)\0Harmony.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <!-- dotnet build -p:Deploy=true copies the finished mod into RimWorld's Mods folder. -->
+  <Target Name="DeployMod" AfterTargets="Build" Condition="'$(Deploy)' == 'true'">
+    <RemoveDir Directories="$(ModDeployDir)" />
+    <Exec Command="robocopy &quot;..\..\About&quot; &quot;$(ModDeployDir)\About&quot; /E /NFL /NDL /NJH /NJS /NP &amp; robocopy &quot;..\..\Languages&quot; &quot;$(ModDeployDir)\Languages&quot; /E /NFL /NDL /NJH /NJS /NP &amp; robocopy &quot;..\..\1.7&quot; &quot;$(ModDeployDir)\1.7&quot; /E /NFL /NDL /NJH /NJS /NP &amp; exit 0" />
+    <Message Importance="high" Text="Deployed mod to $(ModDeployDir)" />
+  </Target>
+
+</Project>

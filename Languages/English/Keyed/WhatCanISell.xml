@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <WCIS_CommandLabel>Things you can sell</WCIS_CommandLabel>
+  <WCIS_CommandDesc>See which items in your colony's storage this settlement will buy, with estimated prices, and form a caravan with them pre-selected.</WCIS_CommandDesc>
+  <WCIS_Title>Things you can sell to {0}</WCIS_Title>
+  <WCIS_Colony>Colony: {0}</WCIS_Colony>
+  <WCIS_Negotiator>Negotiator: {0}</WCIS_Negotiator>
+  <WCIS_NoNegotiator>Negotiator: none available</WCIS_NoNegotiator>
+  <WCIS_NegotiatorTip>Estimated sell prices use this pawn's trade price improvement. The real price depends on who actually negotiates when the caravan arrives.</WCIS_NegotiatorTip>
+  <WCIS_RequiresTitle>Trading here requires the title: {0}</WCIS_RequiresTitle>
+  <WCIS_ColItem>Item</WCIS_ColItem>
+  <WCIS_ColInStorage>In storage</WCIS_ColInStorage>
+  <WCIS_ColMarketValue>Market value</WCIS_ColMarketValue>
+  <WCIS_ColSellPrice>Est. sell price</WCIS_ColSellPrice>
+  <WCIS_ColTotal>Est. total</WCIS_ColTotal>
+  <WCIS_SellPriceTip>Estimated price this trader pays per unit, using the chosen negotiator, the faction's price offset, and your difficulty settings.</WCIS_SellPriceTip>
+  <WCIS_Nothing>Nothing in your colony's storage is wanted by this trader.</WCIS_Nothing>
+  <WCIS_NoColony>You have no colony map to sell from.</WCIS_NoColony>
+  <WCIS_Summary>Selected: {0} items · {1} kg · est. {2}</WCIS_Summary>
+  <WCIS_SortByName>Sort: name</WCIS_SortByName>
+  <WCIS_SortByValue>Sort: total value</WCIS_SortByValue>
+  <WCIS_SelectAll>Select all</WCIS_SelectAll>
+  <WCIS_Clear>Clear</WCIS_Clear>
+  <WCIS_FormCaravan>Form caravan</WCIS_FormCaravan>
+  <WCIS_Favor>{0} favor</WCIS_Favor>
+  <WCIS_AutoSuppliesOff>Automatic travel supply selection was turned off so it won't overwrite the food or medicine you chose to sell. Add travel supplies manually.</WCIS_AutoSuppliesOff>
+</LanguageData>

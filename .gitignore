@@ -1,0 +1,7 @@
+bin/
+obj/
+.vs/
+*.user
+*.pdb
+# Build output; produced by `dotnet build Source/WhatCanISell`
+1.7/Assemblies/

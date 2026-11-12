@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ModMetaData>
+  <name>What Can I Sell?</name>
+  <author>Luís Sousa</author>
+  <packageId>luissousa.whatcanisell</packageId>
+  <modVersion>0.1.0</modVersion>
+  <supportedVersions>
+    <li>1.7</li>
+  </supportedVersions>
+  <modDependencies>
+    <li>
+      <packageId>brrainz.harmony</packageId>
+      <displayName>Harmony</displayName>
+      <steamWorkshopUrl>steam://url/CommunityFilePage/2009463077</steamWorkshopUrl>
+    </li>
+  </modDependencies>
+  <loadAfter>
+    <li>brrainz.harmony</li>
+  </loadAfter>
+  <description>Adds a "Things you can sell" button to world settlements (and to the vanilla "Things this trader will buy" window).
+
+It cross-references what the settlement's trader will buy with what is actually sitting in your colony's storage, and shows it like a trade screen: how many you have, market value, and an estimated sell price based on your best negotiator.
+
+Pick amounts, press "Form caravan", and the vanilla Form Caravan window opens with those items already selected and the settlement set as the destination. Add your pawns and travel supplies as usual.
+
+You cannot trade from this window. It is a planning tool.</description>
+</ModMetaData>
