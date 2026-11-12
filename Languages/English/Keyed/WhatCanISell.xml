@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LanguageData>
   <WCIS_CommandLabel>Things you can sell</WCIS_CommandLabel>
-  <WCIS_CommandDesc>See which items in your colony's storage this settlement will buy, with estimated prices, and form a caravan with them pre-selected.</WCIS_CommandDesc>
+  <WCIS_CommandDesc>See which items, prisoners, slaves and animals from your colony this settlement will buy, with estimated prices, and form a caravan with them pre-selected.</WCIS_CommandDesc>
   <WCIS_Title>Things you can sell to {0}</WCIS_Title>
   <WCIS_Colony>Colony: {0}</WCIS_Colony>
   <WCIS_Negotiator>Negotiator: {0}</WCIS_Negotiator>
@@ -14,9 +14,15 @@
   <WCIS_ColSellPrice>Est. sell price</WCIS_ColSellPrice>
   <WCIS_ColTotal>Est. total</WCIS_ColTotal>
   <WCIS_SellPriceTip>Estimated price this trader pays per unit, using the chosen negotiator, the faction's price offset, and your difficulty settings.</WCIS_SellPriceTip>
-  <WCIS_Nothing>Nothing in your colony's storage is wanted by this trader.</WCIS_Nothing>
+  <WCIS_Nothing>Nothing here is wanted by this trader.</WCIS_Nothing>
   <WCIS_NoColony>You have no colony map to sell from.</WCIS_NoColony>
-  <WCIS_Summary>Selected: {0} items · {1} kg · est. {2}</WCIS_Summary>
+  <WCIS_Summary>Selected: {0} items · {1} pawns · {2} kg · est. {3}</WCIS_Summary>
+  <WCIS_TabAll>All</WCIS_TabAll>
+  <WCIS_TabItems>Items</WCIS_TabItems>
+  <WCIS_TabCaptives>Prisoners &amp; slaves</WCIS_TabCaptives>
+  <WCIS_TabAnimals>Animals</WCIS_TabAnimals>
+  <WCIS_Prisoner>prisoner</WCIS_Prisoner>
+  <WCIS_Slave>slave</WCIS_Slave>
   <WCIS_SortByName>Sort: name</WCIS_SortByName>
   <WCIS_SortByValue>Sort: total value</WCIS_SortByValue>
   <WCIS_SelectAll>Select all</WCIS_SelectAll>

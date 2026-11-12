@@ -23,8 +23,19 @@ namespace WhatCanISell
         private readonly QuickSearchWidget search = new QuickSearchWidget();
         private Vector2 scrollPosition;
         private bool sortByValue = true;
+        private Tab tab = Tab.All;
+        private readonly List<TabRecord> tabs = new List<TabRecord>();
+
+        private enum Tab
+        {
+            All,
+            Items,
+            Captives,
+            Animals,
+        }
 
         private const float RowHeight = 30f;
+        private const float TabsHeight = 32f;
         private const float HeaderHeight = 24f;
         private const float BottomAreaHeight = 78f;
         private const float ControlsHeight = 28f;
@@ -94,8 +105,10 @@ namespace WhatCanISell
             y += ControlsHeight + 8f;
             Text.Anchor = TextAnchor.UpperLeft;
 
+            y += TabsHeight;
             Rect listRect = new Rect(0f, y, inRect.width, inRect.height - y - BottomAreaHeight);
-            DrawList(listRect);
+            DrawTabs(listRect);
+            DrawList(listRect.ContractedBy(4f));
 
             DrawBottom(new Rect(0f, inRect.height - BottomAreaHeight, inRect.width, BottomAreaHeight));
             Text.Anchor = TextAnchor.UpperLeft;
@@ -147,16 +160,47 @@ namespace WhatCanISell
             return pawn.LabelShortCap + " (" + pawn.GetStatValue(StatDefOf.TradePriceImprovement).ToStringPercent() + ")";
         }
 
+        private void DrawTabs(Rect listRect)
+        {
+            Widgets.DrawMenuSection(listRect);
+            tabs.Clear();
+            AddTab(Tab.All, "WCIS_TabAll", entries.Count);
+            AddTab(Tab.Items, "WCIS_TabItems", entries.Count(e => e.kind == SellableKind.Item));
+            AddTab(Tab.Captives, "WCIS_TabCaptives", entries.Count(e => e.kind == SellableKind.Captive));
+            AddTab(Tab.Animals, "WCIS_TabAnimals", entries.Count(e => e.kind == SellableKind.Animal));
+            TabDrawer.DrawTabs(listRect, tabs);
+        }
+
+        private void AddTab(Tab which, string key, int count)
+        {
+            tabs.Add(new TabRecord(key.Translate() + " (" + count + ")", () =>
+            {
+                tab = which;
+                scrollPosition = Vector2.zero;
+            }, tab == which));
+        }
+
+        private bool InCurrentTab(SellableEntry entry)
+        {
+            switch (tab)
+            {
+                case Tab.Items: return entry.kind == SellableKind.Item;
+                case Tab.Captives: return entry.kind == SellableKind.Captive;
+                case Tab.Animals: return entry.kind == SellableKind.Animal;
+                default: return true;
+            }
+        }
+
         private void RebuildVisible()
         {
             visible.Clear();
             foreach (SellableEntry entry in entries)
             {
-                if (!entry.transferable.HasAnyThing)
+                if (!entry.transferable.HasAnyThing || !InCurrentTab(entry))
                 {
                     continue;
                 }
-                if (search.filter.Active && !search.filter.Matches(entry.transferable.Label) && !search.filter.Matches(entry.transferable.ThingDef.defName))
+                if (search.filter.Active && !search.filter.Matches(entry.Label) && !search.filter.Matches(entry.transferable.ThingDef.defName))
                 {
                     continue;
                 }
@@ -168,7 +212,7 @@ namespace WhatCanISell
             }
             else
             {
-                visible.SortBy(e => e.transferable.Label);
+                visible.SortBy(e => e.Label);
             }
             search.noResultsMatched = search.filter.Active && visible.Count == 0;
         }
@@ -185,7 +229,7 @@ namespace WhatCanISell
             Rect header = new Rect(rect.x, rect.y, width, HeaderHeight);
             Text.Anchor = TextAnchor.MiddleLeft;
             GUI.color = Color.gray;
-            Widgets.Label(new Rect(LabelX, header.y, ColumnStart(width, 4) - LabelX, HeaderHeight), "WCIS_ColItem".Translate());
+            Widgets.Label(new Rect(rect.x + LabelX, header.y, ColumnStart(width, 4) - LabelX, HeaderHeight), "WCIS_ColItem".Translate());
             Text.Anchor = TextAnchor.MiddleRight;
             Widgets.Label(ColumnRect(header, width, 4), "WCIS_ColInStorage".Translate());
             Widgets.Label(ColumnRect(header, width, 3), "WCIS_ColMarketValue".Translate());
@@ -242,10 +286,23 @@ namespace WhatCanISell
             Widgets.InfoCardButton(row.x + 2f, row.y + (row.height - 24f) / 2f, thing);
             Widgets.ThingIcon(new Rect(IconX, row.y + (row.height - 27f) / 2f, 27f, 27f), thing);
 
+            // Vanilla trade-row icons (ransom/slavery for captives; bonded, pregnant, sick,
+            // rideable for animals). They draw right-to-left from curX inside a row-local group.
+            float labelEnd = ColumnStart(width, 4) - 6f;
+            float curX = labelEnd;
+            if (entry.IsPawn)
+            {
+                Widgets.BeginGroup(row);
+                Rect local = row.AtZero();
+                TransferableUIUtility.DoExtraIcons(trad, local, ref curX);
+                TransferableUIUtility.DrawCaptiveTradeInfo(trad, settlement, local, ref curX);
+                Widgets.EndGroup();
+            }
+
             Text.Anchor = TextAnchor.MiddleLeft;
-            Rect labelRect = new Rect(LabelX, row.y, ColumnStart(width, 4) - LabelX - 6f, row.height);
-            Widgets.Label(labelRect, trad.LabelCap.Truncate(labelRect.width));
-            TooltipHandler.TipRegion(labelRect, trad.LabelCap + "\n\n" + trad.TipDescription);
+            Rect labelRect = new Rect(LabelX, row.y, curX - LabelX - 4f, row.height);
+            Widgets.Label(labelRect, entry.Label.Truncate(labelRect.width));
+            TooltipHandler.TipRegion(labelRect, entry.Tooltip);
 
             Text.Anchor = TextAnchor.MiddleRight;
             Widgets.Label(ColumnRect(row, width, 4), entry.Available.ToStringCached());
@@ -297,7 +354,8 @@ namespace WhatCanISell
 
         private void DrawBottom(Rect rect)
         {
-            int count = 0;
+            int itemCount = 0;
+            int pawnCount = 0;
             float mass = 0f;
             float value = 0f;
             foreach (SellableEntry entry in entries)
@@ -307,14 +365,21 @@ namespace WhatCanISell
                 {
                     continue;
                 }
-                count += selected;
+                if (entry.IsPawn)
+                {
+                    pawnCount += selected;
+                }
+                else
+                {
+                    itemCount += selected;
+                }
                 mass += entry.massEach * selected;
                 value += entry.sellPrice * selected;
             }
 
             Text.Anchor = TextAnchor.MiddleLeft;
             Widgets.Label(new Rect(rect.x, rect.y, rect.width, 26f),
-                "WCIS_Summary".Translate(count.ToStringCached(), mass.ToString("0.#"), SellableStock.FormatPrice(value, settlement)));
+                "WCIS_Summary".Translate(itemCount.ToStringCached(), pawnCount.ToStringCached(), mass.ToString("0.#"), SellableStock.FormatPrice(value, settlement)));
             Text.Anchor = TextAnchor.UpperLeft;
 
             float buttonY = rect.yMax - BottomButtonSize.y;

@@ -19,9 +19,9 @@
   </loadAfter>
   <description>Adds a "Things you can sell" button to world settlements (and to the vanilla "Things this trader will buy" window).
 
-It cross-references what the settlement's trader will buy with what is actually sitting in your colony's storage, and shows it like a trade screen: how many you have, market value, and an estimated sell price based on your best negotiator.
+It cross-references what the settlement's trader will buy with what your colony actually has (items in storage, plus prisoners, slaves and animals) and shows it like a trade screen: how many you have, market value, and an estimated sell price based on your best negotiator.
 
-Pick amounts, press "Form caravan", and the vanilla Form Caravan window opens with those items already selected and the settlement set as the destination. Add your pawns and travel supplies as usual.
+Pick amounts, press "Form caravan", and the vanilla Form Caravan window opens with those already selected and the settlement set as the destination. Add your colonists and travel supplies as usual.
 
 You cannot trade from this window. It is a planning tool.</description>
 </ModMetaData>

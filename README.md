@@ -5,7 +5,7 @@ A RimWorld 1.7 mod. On the world map, a settlement's vanilla **"Show what will b
 ## Features
 
 - **"Things you can sell" gizmo.** It sits next to "Show what will buy" on any non-player, non-permanent-enemy settlement that trades. The vanilla "Things this trader will buy" window gets the same button next to *Close*.
-- **Trade-style list** of the items in your colony that this trader buys. For each item you see:
+- **Trade-style list** of the items, prisoners, slaves and animals in your colony that this trader buys, split into tabs (All / Items / Prisoners & slaves / Animals). For each row you see:
   - how many you have in storage
   - market value
   - estimated sell price per unit
@@ -19,7 +19,9 @@ A RimWorld 1.7 mod. On the world map, a settlement's vanilla **"Show what will b
 
 You cannot trade from this window. It is only for planning.
 
-Item list source: the same reachable home-area items the Form Caravan window offers (`CaravanFormingUtility.AllReachableColonyItems`). These are filtered by the trader's `TraderKindDef.WillTrade` and `TradeUtility.PlayerSellableNow`, so rotten food, apparel worn by corpses and biocoded gear are left out, just like in the real trade screen.
+- **Pawns** show the same warnings as the vanilla trade screen: ransom or slavery icons for captives, and bonded, pregnant, sick and rideable icons for animals. Estimated prices include Ideology's 0.6× factor for selling humanlike captives.
+
+Item list source: the same reachable home-area items the Form Caravan window offers (`CaravanFormingUtility.AllReachableColonyItems`). Pawns come from `TradeUtility.AllSellableColonyPawns` (secure prisoners and slaves; healthy, calm, tame animals), limited to the pawns the Form Caravan window lists. Everything is filtered by the trader's `TraderKindDef.WillTrade` and `TradeUtility.PlayerSellableNow`, so rotten food, apparel worn by corpses, biocoded gear and captives from the trader's own faction (unless they're prisoners or slaves) are left out, just like in the real trade screen.
 
 ## Requirements
 
@@ -57,5 +59,4 @@ Source/WhatCanISell/
 
 ## Not covered yet
 
-- Pawns: animals, prisoners and slaves are not listed. Only items are.
-- Items already inside caravans or in other pawns' inventories are not counted.
+- Items already inside caravans or in pawns' inventories are not counted.
