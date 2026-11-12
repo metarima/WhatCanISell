@@ -28,6 +28,7 @@
   <WCIS_SelectAll>Select all</WCIS_SelectAll>
   <WCIS_Clear>Clear</WCIS_Clear>
   <WCIS_FormCaravan>Form caravan</WCIS_FormCaravan>
+  <WCIS_HostileNoCaravan>This faction is hostile, so a caravan sent here would attack instead of trading.</WCIS_HostileNoCaravan>
   <WCIS_Favor>{0} favor</WCIS_Favor>
   <WCIS_AutoSuppliesOff>Automatic travel supply selection was turned off so it won't overwrite the food or medicine you chose to sell. Add travel supplies manually.</WCIS_AutoSuppliesOff>
 </LanguageData>

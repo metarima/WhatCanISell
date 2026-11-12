@@ -10,14 +10,10 @@ namespace WhatCanISell
     public enum SellableKind
     {
         Item,
-        Captive, // prisoners and slaves of the colony
+        Captive,
         Animal,
     }
 
-    /// <summary>
-    /// One row in the window: a group of identical colony items, or a single prisoner, slave
-    /// or animal, that the trader will buy.
-    /// </summary>
     public class SellableEntry
     {
         public readonly TransferableOneWay transferable;
@@ -25,6 +21,7 @@ namespace WhatCanISell
         public float marketValue;
         public float sellPrice;
         public float massEach;
+        private string label;
 
         public SellableEntry(TransferableOneWay transferable, SellableKind kind)
         {
@@ -37,28 +34,8 @@ namespace WhatCanISell
         public int Selected => transferable.CountToTransfer;
         public float TotalValueAvailable => sellPrice * Available;
 
-        /// <summary>Same label format as the vanilla trade screen (Tradeable_Pawn for pawns).</summary>
-        public string Label
-        {
-            get
-            {
-                if (!(transferable.AnyThing is Pawn pawn))
-                {
-                    return transferable.LabelCap;
-                }
-                string text = pawn.LabelNoCount;
-                if (pawn.Name != null && !pawn.Name.Numerical && !pawn.RaceProps.Humanlike)
-                {
-                    text += ", " + pawn.def.label;
-                }
-                text += " (" + pawn.GetGenderLabel() + ", " + Mathf.FloorToInt(pawn.ageTracker.AgeBiologicalYearsFloat) + ")";
-                if (kind == SellableKind.Captive)
-                {
-                    text += " - " + (pawn.IsSlave ? "WCIS_Slave" : "WCIS_Prisoner").Translate();
-                }
-                return text.CapitalizeFirst();
-            }
-        }
+        // Matches Tradeable_Pawn.Label for pawns.
+        public string Label => label ??= BuildLabel();
 
         public string Tooltip
         {
@@ -68,8 +45,27 @@ namespace WhatCanISell
                 {
                     return Label + "\n\n" + pawn.MainDesc(writeFaction: true) + "\n\n" + pawn.DescriptionDetailed;
                 }
-                return transferable.LabelCap + "\n\n" + transferable.TipDescription;
+                return Label + "\n\n" + transferable.TipDescription;
             }
+        }
+
+        private string BuildLabel()
+        {
+            if (!(transferable.AnyThing is Pawn pawn))
+            {
+                return transferable.LabelCap;
+            }
+            string text = pawn.LabelNoCount;
+            if (pawn.Name != null && !pawn.Name.Numerical && !pawn.RaceProps.Humanlike)
+            {
+                text += ", " + pawn.def.label;
+            }
+            text += " (" + pawn.GetGenderLabel() + ", " + Mathf.FloorToInt(pawn.ageTracker.AgeBiologicalYearsFloat) + ")";
+            if (kind == SellableKind.Captive)
+            {
+                text += " - " + (pawn.IsSlave ? "WCIS_Slave" : "WCIS_Prisoner").Translate();
+            }
+            return text.CapitalizeFirst();
         }
     }
 
@@ -83,11 +79,11 @@ namespace WhatCanISell
                 && !settlement.Faction.def.permanentEnemy;
         }
 
-        /// <summary>
-        /// Items the Form Caravan window could take from this map (same source vanilla uses),
-        /// grouped like the caravan/trade UI, plus sellable prisoners, slaves and animals,
-        /// all filtered to what this settlement's trader will buy.
-        /// </summary>
+        public static bool CanSendCaravanTo(Settlement settlement)
+        {
+            return CanShowFor(settlement) && !settlement.Faction.HostileTo(Faction.OfPlayer);
+        }
+
         public static List<SellableEntry> Gather(Map map, Settlement settlement, Pawn negotiator)
         {
             var result = new List<SellableEntry>();
@@ -97,53 +93,51 @@ namespace WhatCanISell
                 return result;
             }
 
-            var groups = new List<TransferableOneWay>();
+            // Grouped with the same mode Dialog_FormCaravan uses, so each row maps onto one of its rows.
+            var itemGroups = new List<TransferableOneWay>();
             foreach (Thing thing in CaravanFormingUtility.AllReachableColonyItems(map))
             {
                 Thing inner = thing.GetInnerIfMinified();
-                if (inner.def == ThingDefOf.Silver)
-                {
-                    continue; // silver is the currency, not something you sell
-                }
-                if (!kind.WillTrade(inner.def) || !TradeUtility.PlayerSellableNow(thing, settlement))
+                if (inner.def == ThingDefOf.Silver || !kind.WillTrade(inner.def) || !TradeUtility.PlayerSellableNow(thing, settlement))
                 {
                     continue;
                 }
-                TransferableOneWay group = TransferableUtility.TransferableMatching(thing, groups, TransferAsOneMode.PodsOrCaravanPacking);
-                if (group == null)
-                {
-                    group = new TransferableOneWay();
-                    groups.Add(group);
-                }
-                if (!group.things.Contains(thing))
-                {
-                    group.things.Add(thing);
-                }
+                AddToGroup(itemGroups, thing);
             }
 
-            foreach (TransferableOneWay group in groups)
-            {
-                result.Add(new SellableEntry(group, SellableKind.Item));
-            }
-
-            // Prisoners, slaves and animals: the pool vanilla offers to traders (secure captives;
-            // tame, healthy, non-berserk animals), limited to pawns the Form Caravan window will
-            // actually list, so everything shown here can be pre-filled. Each pawn is its own row.
-            var caravanSendable = new HashSet<Pawn>(Dialog_FormCaravan.AllSendablePawns(map, reform: false));
+            var sendable = new HashSet<Pawn>(Dialog_FormCaravan.AllSendablePawns(map, reform: false));
+            var pawnGroups = new List<TransferableOneWay>();
             foreach (Pawn pawn in TradeUtility.AllSellableColonyPawns(map, checkAcceptableTemperatureOfAnimals: false))
             {
-                if (!caravanSendable.Contains(pawn) || !kind.WillTrade(pawn.def) || !TradeUtility.PlayerSellableNow(pawn, settlement))
+                if (sendable.Contains(pawn) && kind.WillTrade(pawn.def) && TradeUtility.PlayerSellableNow(pawn, settlement))
                 {
-                    continue;
+                    AddToGroup(pawnGroups, pawn);
                 }
-                var single = new TransferableOneWay();
-                single.things.Add(pawn);
-                SellableKind pawnKind = pawn.IsPrisonerOfColony || pawn.IsSlaveOfColony ? SellableKind.Captive : SellableKind.Animal;
-                result.Add(new SellableEntry(single, pawnKind));
+            }
+
+            result.AddRange(itemGroups.Select(g => new SellableEntry(g, SellableKind.Item)));
+            foreach (TransferableOneWay group in pawnGroups)
+            {
+                Pawn pawn = (Pawn)group.AnyThing;
+                result.Add(new SellableEntry(group, pawn.IsPrisonerOfColony || pawn.IsSlaveOfColony ? SellableKind.Captive : SellableKind.Animal));
             }
 
             UpdatePrices(result, settlement, negotiator);
             return result;
+        }
+
+        private static void AddToGroup(List<TransferableOneWay> groups, Thing thing)
+        {
+            TransferableOneWay group = TransferableUtility.TransferableMatching(thing, groups, TransferAsOneMode.PodsOrCaravanPacking);
+            if (group == null)
+            {
+                group = new TransferableOneWay();
+                groups.Add(group);
+            }
+            if (!group.things.Contains(thing))
+            {
+                group.things.Add(thing);
+            }
         }
 
         public static void UpdatePrices(List<SellableEntry> entries, Settlement settlement, Pawn negotiator)
@@ -153,13 +147,13 @@ namespace WhatCanISell
                 Thing any = entry.transferable.AnyThing;
                 Thing inner = any.GetInnerIfMinified();
                 entry.marketValue = inner.MarketValue;
-                // Pawns walk with the caravan; vanilla's mass usage doesn't count their body mass.
+                // Caravan mass usage excludes pawns' own body mass.
                 entry.massEach = entry.IsPawn ? 0f : any.GetStatValue(StatDefOf.Mass);
                 entry.sellPrice = EstimateSellPrice(inner, settlement, negotiator);
             }
         }
 
-        /// <summary>Mirrors Tradeable.InitPriceDataIfNeeded (player-sells side) without needing a TradeSession.</summary>
+        // Player-sells side of Tradeable.InitPriceDataIfNeeded, without a TradeSession.
         public static float EstimateSellPrice(Thing thing, Settlement settlement, Pawn negotiator)
         {
             TraderKindDef kind = settlement.TraderKind;
@@ -181,8 +175,6 @@ namespace WhatCanISell
                 }
             }
 
-            // With Ideology, humanlike captives sell at 0.6x, and the buy-side cap uses 0.6x for
-            // pawns that would join as slaves (same factors as Tradeable.InitPriceDataIfNeeded).
             float humanPawnSellFactor = 1f;
             float joinAsBuyFactor = 1f;
             if (ModsConfig.IdeologyActive && thing is Pawn pawn && pawn.RaceProps.Humanlike && pawn.guest != null)
@@ -201,10 +193,7 @@ namespace WhatCanISell
             {
                 float buyFactor = kind.PriceTypeFor(thing.def, TradeAction.PlayerBuys).PriceMultiplier();
                 float buy = TradeUtility.GetPricePlayerBuy(thing, buyFactor, joinAsBuyFactor, negotiatorGain, settlementGain);
-                if (sell >= buy)
-                {
-                    sell = buy;
-                }
+                sell = Mathf.Min(sell, buy);
             }
             return sell;
         }

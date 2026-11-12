@@ -8,10 +8,6 @@ using Verse;
 
 namespace WhatCanISell
 {
-    /// <summary>
-    /// Opens the vanilla Form Caravan window and, once it has built its own item list,
-    /// sets the chosen counts and adds the settlement as the route destination.
-    /// </summary>
     public static class FormCaravanPrefill
     {
         private class Pending
@@ -58,38 +54,48 @@ namespace WhatCanISell
         private static void Apply(Dialog_FormCaravan dialog, Pending p)
         {
             var wanted = new Dictionary<TransferableOneWay, int>();
+            var chosen = new Dictionary<TransferableOneWay, List<Thing>>();
+
             foreach ((List<Thing> things, int count) in p.selections)
             {
-                TransferableOneWay target = null;
+                int remaining = count;
                 foreach (Thing thing in things)
                 {
-                    target = dialog.transferables.FirstOrDefault(t => t.things.Contains(thing));
-                    if (target != null)
+                    if (remaining <= 0)
                     {
                         break;
                     }
+                    TransferableOneWay target = dialog.transferables.FirstOrDefault(t => t.things.Contains(thing));
+                    if (target == null)
+                    {
+                        continue;
+                    }
+                    int take = Math.Min(remaining, thing.stackCount);
+                    wanted.TryGetValue(target, out int already);
+                    wanted[target] = already + take;
+                    if (!chosen.TryGetValue(target, out List<Thing> picks))
+                    {
+                        chosen[target] = picks = new List<Thing>();
+                    }
+                    picks.Add(thing);
+                    remaining -= take;
                 }
-                if (target == null && things.Count > 0)
-                {
-                    target = TransferableUtility.TransferableMatching(things[0], dialog.transferables, TransferAsOneMode.PodsOrCaravanPacking);
-                }
-                if (target == null)
-                {
-                    continue; // item was moved/used since the window was opened
-                }
-                wanted.TryGetValue(target, out int existing);
-                wanted[target] = existing + count;
             }
 
             bool selectedTravelSupplies = false;
             foreach (KeyValuePair<TransferableOneWay, int> kv in wanted)
             {
-                kv.Key.AdjustTo(kv.Key.ClampAmount(kv.Value));
-                selectedTravelSupplies |= IsAutoSelectedTravelSupply(kv.Key);
+                TransferableOneWay target = kv.Key;
+                // The caravan takes things from the front of the list, so put the player's
+                // picks first; otherwise a grouped row could send a different animal.
+                List<Thing> picks = chosen[target];
+                target.things.RemoveAll(picks.Contains);
+                target.things.InsertRange(0, picks);
+                target.AdjustTo(target.ClampAmount(kv.Value));
+                selectedTravelSupplies |= IsAutoSelectedTravelSupply(target);
             }
 
-            // Vanilla's automatic travel supplies would reset food/medicine/beds to its own picks,
-            // wiping out what the player chose to sell, so turn it off in that case.
+            // Auto-selection would reset food/medicine/beds to its own amounts.
             if (selectedTravelSupplies && AutoSelectTravelSupplies(dialog))
             {
                 AutoSelectTravelSupplies(dialog) = false;
@@ -99,12 +105,9 @@ namespace WhatCanISell
             SetDestination(dialog, p.destination);
         }
 
-        /// <summary>
-        /// Sets the route straight to the settlement, skipping the world route planner.
-        /// The destination only reaches the dialog when the planner's Accept button is pressed;
-        /// leaving the planner any other way (Escape, or mods like Instant Caravan that send
-        /// without checking for a route) would otherwise form a caravan with no destination.
-        /// </summary>
+        // Set the route directly instead of relying on the route planner's Accept button:
+        // leaving the planner any other way, or mods that send without a route (Instant Caravan),
+        // would otherwise form a caravan with no destination.
         private static void SetDestination(Dialog_FormCaravan dialog, Settlement destination)
         {
             if (destination == null || destination.Destroyed)
@@ -115,7 +118,7 @@ namespace WhatCanISell
             PlanetTile to = destination.Tile;
             if (to.Layer != from.Layer || !Find.WorldReachability.CanReach(from, to))
             {
-                return; // leave vanilla's route planner open so the player can pick a route
+                return;
             }
 
             WorldRoutePlanner planner = Find.WorldRoutePlanner;
@@ -130,7 +133,7 @@ namespace WhatCanISell
             dialog.Notify_ChoseRoute(to);
         }
 
-        /// <summary>Same categories Dialog_FormCaravan.SelectApproximateBestTravelSupplies resets.</summary>
+        // Same categories Dialog_FormCaravan.SelectApproximateBestTravelSupplies resets.
         private static bool IsAutoSelectedTravelSupply(TransferableOneWay t)
         {
             if (!t.HasAnyThing || t.ThingDef.category == ThingCategory.Pawn)

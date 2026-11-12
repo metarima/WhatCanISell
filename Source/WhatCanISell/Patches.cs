@@ -7,7 +7,6 @@ using Verse;
 
 namespace WhatCanISell
 {
-    /// <summary>Adds the "Things you can sell" gizmo right after vanilla's "Show what will buy".</summary>
     [HarmonyPatch(typeof(Settlement), nameof(Settlement.GetGizmos))]
     public static class Patch_Settlement_GetGizmos
     {
@@ -42,7 +41,6 @@ namespace WhatCanISell
         }
     }
 
-    /// <summary>Adds a "Things you can sell" button next to Close in vanilla's "Things this trader will buy" window.</summary>
     [HarmonyPatch(typeof(Dialog_SellableItems), "DoBottomButtons")]
     public static class Patch_Dialog_SellableItems_DoBottomButtons
     {

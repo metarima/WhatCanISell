@@ -8,10 +8,6 @@ using Verse.Sound;
 
 namespace WhatCanISell
 {
-    /// <summary>
-    /// Trade-screen style list of colony items that a settlement will buy. Read-only as far as
-    /// trading goes: the only action is pre-filling a Form Caravan window.
-    /// </summary>
     public class Dialog_ThingsYouCanSell : Window
     {
         private readonly Settlement settlement;
@@ -48,7 +44,7 @@ namespace WhatCanISell
         private const float LabelX = 60f;
         private static readonly Vector2 BottomButtonSize = new Vector2(160f, 40f);
 
-        public override Vector2 InitialSize => new Vector2(980f, Mathf.Min(UI.screenHeight, 900));
+        public override Vector2 InitialSize => new Vector2(Mathf.Min(UI.screenWidth, 980f), Mathf.Min(UI.screenHeight, 900f));
 
         public Dialog_ThingsYouCanSell(Settlement settlement)
         {
@@ -225,7 +221,7 @@ namespace WhatCanISell
                 return;
             }
 
-            float width = rect.width - 16f; // scrollbar
+            float width = rect.width - 16f;
             Rect header = new Rect(rect.x, rect.y, width, HeaderHeight);
             Text.Anchor = TextAnchor.MiddleLeft;
             GUI.color = Color.gray;
@@ -286,10 +282,8 @@ namespace WhatCanISell
             Widgets.InfoCardButton(row.x + 2f, row.y + (row.height - 24f) / 2f, thing);
             Widgets.ThingIcon(new Rect(IconX, row.y + (row.height - 27f) / 2f, 27f, 27f), thing);
 
-            // Vanilla trade-row icons (ransom/slavery for captives; bonded, pregnant, sick,
-            // rideable for animals). They draw right-to-left from curX inside a row-local group.
-            float labelEnd = ColumnStart(width, 4) - 6f;
-            float curX = labelEnd;
+            // These vanilla helpers draw right-to-left from curX in row-local coordinates.
+            float curX = ColumnStart(width, 4) - 6f;
             if (entry.IsPawn)
             {
                 Widgets.BeginGroup(row);
@@ -302,7 +296,10 @@ namespace WhatCanISell
             Text.Anchor = TextAnchor.MiddleLeft;
             Rect labelRect = new Rect(LabelX, row.y, curX - LabelX - 4f, row.height);
             Widgets.Label(labelRect, entry.Label.Truncate(labelRect.width));
-            TooltipHandler.TipRegion(labelRect, entry.Tooltip);
+            if (Mouse.IsOver(labelRect))
+            {
+                TooltipHandler.TipRegion(labelRect, entry.Tooltip);
+            }
 
             Text.Anchor = TextAnchor.MiddleRight;
             Widgets.Label(ColumnRect(row, width, 4), entry.Available.ToStringCached());
@@ -346,7 +343,6 @@ namespace WhatCanISell
         {
             float start = row.x + ColumnStart(width, column);
             float colWidth = ColumnWidths[column];
-            // Keep a little breathing room between right-aligned number columns.
             return column == 1
                 ? new Rect(start, row.y, colWidth, row.height)
                 : new Rect(start, row.y, colWidth - 8f, row.height);
@@ -407,19 +403,22 @@ namespace WhatCanISell
                 SoundDefOf.Tick_Low.PlayOneShotOnCamera();
             }
 
+            // A caravan sent to a hostile settlement takes the first available arrival
+            // action there, which is "attack".
+            bool canSend = map != null && SellableStock.CanSendCaravanTo(settlement);
             Rect formRect = new Rect(rect.xMax - BottomButtonSize.x, buttonY, BottomButtonSize.x, BottomButtonSize.y);
-            if (Widgets.ButtonText(formRect, "WCIS_FormCaravan".Translate(), active: map != null))
+            if (Widgets.ButtonText(formRect, "WCIS_FormCaravan".Translate(), active: canSend) && canSend)
             {
                 FormCaravan();
+            }
+            if (!canSend && map != null)
+            {
+                TooltipHandler.TipRegion(formRect, "WCIS_HostileNoCaravan".Translate());
             }
         }
 
         private void FormCaravan()
         {
-            if (map == null)
-            {
-                return;
-            }
             var selections = entries
                 .Where(e => e.Selected > 0)
                 .Select(e => (e.transferable.things.ToList(), e.Selected))

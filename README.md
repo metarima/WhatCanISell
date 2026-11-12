@@ -16,6 +16,7 @@ A RimWorld 1.7 mod. On the world map, a settlement's vanilla **"Show what will b
 - **Search box**, plus sorting by total value or by name.
 - **Form caravan.** Opens the vanilla Form Caravan window with your chosen items already selected and the route already set to the settlement, so the route planner is skipped. Use *Change route* if you want a different path. Add pawns and travel supplies as usual.
   - If you chose to sell food, medicine or beds, the mod turns off *Automatically select travel supplies*. Otherwise vanilla would reset those items to its own picks.
+  - Disabled for hostile factions: you can still browse the list, but a caravan routed there would attack on arrival.
 
 You cannot trade from this window. It is only for planning.
 
