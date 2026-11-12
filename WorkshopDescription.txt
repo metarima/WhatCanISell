@@ -43,3 +43,12 @@ Your picks, the exact animals you chose and your negotiator are selected, and th
 - Items already in caravans or colonists' inventories aren't counted
 
 [url=https://github.com/metarima/WhatCanISell]Source on GitHub[/url]
+
+[hr][/hr]
+[h1]AI disclosure[/h1]
+This mod is AI-assisted. I review, change and test the code myself. The screenshots on this page were taken in game on the current version, and every feature has been tested in game.
+
+[list]
+[*][b]Support:[/b] report bugs or mod conflicts in the comments, a discussion thread or on [url=https://github.com/metarima/WhatCanISell/issues]GitHub[/url], with your Player.log if something went wrong.
+[*][b]Open source:[/b] all the code is on GitHub, so you can read exactly what it does.
+[/list]

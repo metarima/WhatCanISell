@@ -67,3 +67,7 @@ Source/WhatCanISell/
 
 - The "won't buy" list only checks settlements on the colony's own planet layer.
 - Items already inside caravans or in pawns' inventories are not counted.
+
+## Licence
+
+MIT, see [LICENSE](LICENSE).
