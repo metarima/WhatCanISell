@@ -3,7 +3,7 @@ The vanilla "Show what will buy" lists everything a settlement trades in, whethe
 
 Pick what to sell, press "Form caravan", and it's already selected.
 
-[img]SCREENSHOT_1_BUTTON[/img]
+[img]https://raw.githubusercontent.com/metarima/WhatCanISell/main/Workshop/1-button.jpg[/img]
 
 [h1]Features[/h1]
 [list]
@@ -15,17 +15,17 @@ Pick what to sell, press "Form caravan", and it's already selected.
 [*]Press "Form caravan" and the caravan window opens with everything selected and the route set
 [/list]
 
-[img]SCREENSHOT_2_SELL_LIST[/img]
+[img]https://raw.githubusercontent.com/metarima/WhatCanISell/main/Workshop/2-sell-list.jpg[/img]
 
 [h1]Find a buyer for the rest[/h1]
 Switch to "won't buy" to see what this settlement turns down, and the nearest settlement that buys it, with distance and travel time. Set how far to look, and click a buyer to find it on the map.
 
-[img]SCREENSHOT_3_WONT_BUY[/img]
+[img]https://raw.githubusercontent.com/metarima/WhatCanISell/main/Workshop/3-wont-buy.jpg[/img]
 
 [h1]Straight into a caravan[/h1]
 Your picks, the exact animals you chose and your negotiator are selected, and the destination is already set.
 
-[img]SCREENSHOT_4_CARAVAN[/img]
+[img]https://raw.githubusercontent.com/metarima/WhatCanISell/main/Workshop/4-caravan.jpg[/img]
 
 [h1]FAQ[/h1]
 - Can I trade from this window? - No, it is a planning tool. You will have to add colonists and travel supplies in the caravan window as usual.
@@ -34,7 +34,7 @@ Your picks, the exact animals you chose and your negotiator are selected, and th
 - Can I add or remove it mid-save? - Yes. It adds nothing to your save.
 - Does it cost performance? - No. It does nothing until you open its window.
 
-[img]SCREENSHOT_5_HOSTILE[/img]
+[img]https://raw.githubusercontent.com/metarima/WhatCanISell/main/Workshop/5-hostile.jpg[/img]
 
 [h1]Compatibility[/h1]
 - Requires [url=https://steamcommunity.com/sharedfiles/filedetails/?id=2009463077]Harmony[/url]
