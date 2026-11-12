@@ -96,11 +96,38 @@ namespace WhatCanISell
                 Messages.Message("WCIS_AutoSuppliesOff".Translate(), MessageTypeDefOf.CautionInput, historical: false);
             }
             NotifyTransferablesChanged(dialog);
+            SetDestination(dialog, p.destination);
+        }
 
-            if (p.destination != null && !p.destination.Destroyed && Find.WorldRoutePlanner.Active)
+        /// <summary>
+        /// Sets the route straight to the settlement, skipping the world route planner.
+        /// The destination only reaches the dialog when the planner's Accept button is pressed;
+        /// leaving the planner any other way (Escape, or mods like Instant Caravan that send
+        /// without checking for a route) would otherwise form a caravan with no destination.
+        /// </summary>
+        private static void SetDestination(Dialog_FormCaravan dialog, Settlement destination)
+        {
+            if (destination == null || destination.Destroyed)
             {
-                Find.WorldRoutePlanner.TryAddWaypoint(p.destination.Tile, playSound: false);
+                return;
             }
+            PlanetTile from = dialog.CurrentTile;
+            PlanetTile to = destination.Tile;
+            if (to.Layer != from.Layer || !Find.WorldReachability.CanReach(from, to))
+            {
+                return; // leave vanilla's route planner open so the player can pick a route
+            }
+
+            WorldRoutePlanner planner = Find.WorldRoutePlanner;
+            if (planner.FormingCaravan)
+            {
+                planner.Stop();
+            }
+            if (!Find.WindowStack.IsOpen(dialog))
+            {
+                Find.WindowStack.Add(dialog);
+            }
+            dialog.Notify_ChoseRoute(to);
         }
 
         /// <summary>Same categories Dialog_FormCaravan.SelectApproximateBestTravelSupplies resets.</summary>

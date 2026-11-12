@@ -14,7 +14,7 @@ A RimWorld 1.7 mod. On the world map, a settlement's vanilla **"Show what will b
 - **Negotiator picker.** Prices are estimated with your best negotiator by default, and you can pick another colonist from the dropdown. The estimate uses the same formula as vanilla trading, including the faction's price offset, drug and animal-product bonuses, and difficulty.
 - **Colony picker**, shown when you have more than one colony.
 - **Search box**, plus sorting by total value or by name.
-- **Form caravan.** Opens the vanilla Form Caravan window with your chosen items already selected and the settlement already added to the route. Add pawns and travel supplies as usual.
+- **Form caravan.** Opens the vanilla Form Caravan window with your chosen items already selected and the route already set to the settlement, so the route planner is skipped. Use *Change route* if you want a different path. Add pawns and travel supplies as usual.
   - If you chose to sell food, medicine or beds, the mod turns off *Automatically select travel supplies*. Otherwise vanilla would reset those items to its own picks.
 
 You cannot trade from this window. It is only for planning.
