@@ -85,6 +85,8 @@ namespace WhatCanISell
         private void SetMap(Map newMap)
         {
             map = newMap;
+            // Travel times are measured from the colony, so they don't carry over to another one.
+            travelTimes.Clear();
             watch.Restart();
             negotiator = SellableStock.NegotiatorCandidates(map, settlement).FirstOrDefault();
             negotiatorLabel = null;
