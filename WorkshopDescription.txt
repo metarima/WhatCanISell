@@ -1,5 +1,7 @@
 [h1]Know what to pack before you leave[/h1]
-See which of your items, prisoners, slaves and animals a settlement will buy, what they're worth there, and send a caravan with them already picked.
+The vanilla "Show what will buy" lists everything a settlement trades in, whether you own it or not. This mod checks that list against your stockpiles, prisoners, slaves and animals, and shows only what you actually have that they'll buy: how many, what it's worth, and what they'll pay.
+
+Pick what to sell, press "Form caravan", and it's already selected.
 
 [img]SCREENSHOT_1_BUTTON[/img]
 

@@ -17,7 +17,7 @@
   <loadAfter>
     <li>brrainz.harmony</li>
   </loadAfter>
-  <description>Shows which of your items, prisoners, slaves and animals a settlement will buy, and lets you form a caravan with them already selected.
+  <description>The vanilla "Show what will buy" lists everything a settlement trades in. This checks it against your stockpiles, prisoners, slaves and animals, and shows only what you actually have that they'll buy, with prices. Pick what to sell and form a caravan with it already selected.
 
 - "Things you can sell" button on settlements, and in the vanilla "Things this trader will buy" window
 - Lists only what you have that the trader wants

@@ -5,3 +5,4 @@ obj/
 *.pdb
 # Build output; produced by `dotnet build Source/WhatCanISell`
 1.7/Assemblies/
+Workshop/page-preview.html
