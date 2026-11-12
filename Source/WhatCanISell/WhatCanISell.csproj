@@ -39,9 +39,13 @@
   </ItemGroup>
 
   <!-- dotnet build -p:Deploy=true copies the finished mod into RimWorld's Mods folder. -->
+  <!-- Each folder is mirrored on its own, so files the game writes at the mod root (Assets.zip, held open
+       while RimWorld runs) are left alone. Robocopy exit codes below 8 mean success. -->
   <Target Name="DeployMod" AfterTargets="Build" Condition="'$(Deploy)' == 'true'">
-    <RemoveDir Directories="$(ModDeployDir)" />
-    <Exec Command="robocopy &quot;..\..\About&quot; &quot;$(ModDeployDir)\About&quot; /E /NFL /NDL /NJH /NJS /NP &amp; robocopy &quot;..\..\Languages&quot; &quot;$(ModDeployDir)\Languages&quot; /E /NFL /NDL /NJH /NJS /NP &amp; robocopy &quot;..\..\Textures&quot; &quot;$(ModDeployDir)\Textures&quot; /E /NFL /NDL /NJH /NJS /NP &amp; robocopy &quot;..\..\1.7&quot; &quot;$(ModDeployDir)\1.7&quot; /E /NFL /NDL /NJH /NJS /NP &amp; exit 0" />
+    <ItemGroup>
+      <DeployFolder Include="About;Languages;Textures;1.7" />
+    </ItemGroup>
+    <Exec Command="robocopy &quot;..\..\%(DeployFolder.Identity)&quot; &quot;$(ModDeployDir)\%(DeployFolder.Identity)&quot; /MIR /R:2 /W:1 /NFL /NDL /NJH /NJS /NP &amp; if errorlevel 8 (exit 1) else (exit 0)" />
     <Message Importance="high" Text="Deployed mod to $(ModDeployDir)" />
   </Target>
 

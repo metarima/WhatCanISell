@@ -37,6 +37,12 @@ namespace WhatCanISell
         public List<Buyer> buyers;
         private string label;
 
+        // Nothing moves while the window has the game paused, so these are filled once per price update.
+        public int available;
+        public string availableText;
+        public string marketText;
+        public string priceText;
+
         public SellableEntry(TransferableOneWay transferable, SellableKind kind)
         {
             this.transferable = transferable;
@@ -44,9 +50,8 @@ namespace WhatCanISell
         }
 
         public bool IsPawn => kind != SellableKind.Item;
-        public int Available => transferable.GetMaximumToTransfer();
         public int Selected => transferable.CountToTransfer;
-        public float TotalValueAvailable => sellPrice * Available;
+        public float TotalValueAvailable => sellPrice * available;
 
         // Matches Tradeable_Pawn.Label for pawns.
         public string Label => label ??= BuildLabel();
@@ -286,7 +291,12 @@ namespace WhatCanISell
                 entry.marketValue = inner.MarketValue;
                 // Caravan mass usage excludes pawns' own body mass.
                 entry.massEach = entry.IsPawn ? 0f : any.GetStatValue(StatDefOf.Mass);
-                entry.sellPrice = EstimateSellPrice(inner, PriceSettlement(entry, settlement), negotiator);
+                Settlement buyer = PriceSettlement(entry, settlement);
+                entry.sellPrice = EstimateSellPrice(inner, buyer, negotiator);
+                entry.available = entry.transferable.GetMaximumToTransfer();
+                entry.availableText = entry.available.ToStringCached();
+                entry.marketText = entry.marketValue.ToStringMoney();
+                entry.priceText = FormatPrice(entry.sellPrice, buyer);
             }
         }
 

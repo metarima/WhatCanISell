@@ -47,9 +47,6 @@ Things to verify by hand before a release. Restart RimWorld after deploying a ne
 - [x] Clicking a buyer closes the window, moves the world camera to that settlement and selects it
 - [x] *Select all* is hidden in this list
 
-## Performance
-- [x] With dev mode on, closing the window logs gather, buyers and per-frame times
-
 ## Saves
 - [x] Adding the mod to an existing save loads without errors
 - [x] Removing it loads without errors (only the mod-list mismatch warning)

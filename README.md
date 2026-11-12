@@ -59,7 +59,8 @@ Source/WhatCanISell/
   Patches.cs                  settlement gizmo + button in vanilla "will buy" window
   Textures.cs                 loads the button icon
   SellableStock.cs            gathers sellable colony items, estimates prices
-  Dialog_ThingsYouCanSell.cs  the window
+  Dialog_ThingsYouCanSell.cs  the window and its "buys" list
+  Dialog_ThingsYouCanSell.WontBuy.cs  the "won't buy" list and buyer search
   FormCaravanPrefill.cs       opens Form Caravan with the selection applied
 ```
 
