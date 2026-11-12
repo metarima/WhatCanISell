@@ -62,6 +62,7 @@ namespace WhatCanISell
         private const float IconX = 30f;
         private const float LabelX = 60f;
         private static readonly Vector2 BottomButtonSize = new Vector2(160f, 40f);
+        private static readonly Color DisabledButtonColor = new Color(1f, 1f, 1f, 0.35f);
         private static readonly int[] LookWithinPresets = { 10, 25, 50, 100, 200 };
 
         public override Vector2 InitialSize => new Vector2(Mathf.Min(UI.screenWidth, 980f), Mathf.Min(UI.screenHeight, 900f));
@@ -171,6 +172,14 @@ namespace WhatCanISell
             Widgets.Label(new Rect(0f, y, inRect.width, 24f), subtitle);
             GUI.color = Color.white;
             y += 24f;
+
+            if (!SellableStock.CanSendCaravanTo(settlement))
+            {
+                GUI.color = ColorLibrary.RedReadable;
+                Widgets.Label(new Rect(0f, y, inRect.width, 24f), "WCIS_HostileBanner".Translate());
+                GUI.color = Color.white;
+                y += 24f;
+            }
 
             RoyalTitleDef titleRequired = settlement.TraderKind.TitleRequiredToTrade;
             if (titleRequired != null)
@@ -646,8 +655,7 @@ namespace WhatCanISell
             if (!travelTimes.TryGetValue(buyer, out string text))
             {
                 int ticks = CaravanArrivalTimeEstimator.EstimatedTicksToArrive(map.Tile, buyer.Tile, null);
-                // Own text rather than the game's "days" string, which comes with a colour of its own.
-                text = ticks > 0 ? "WCIS_Days".Translate(ticks.TicksToDays().ToString("0.#")).ToString() : "-";
+                text = ticks > 0 ? ticks.ToStringTicksToDays("0.#") : "-";
                 travelTimes[buyer] = text;
             }
             return text;
@@ -728,10 +736,16 @@ namespace WhatCanISell
 
             string cantSendReason = CantSendReason();
             Rect formRect = new Rect(rect.xMax - BottomButtonSize.x, buttonY, BottomButtonSize.x, BottomButtonSize.y);
+            // Vanilla's inactive button barely changes, so dim the whole thing.
+            if (cantSendReason != null)
+            {
+                GUI.color = DisabledButtonColor;
+            }
             if (Widgets.ButtonText(formRect, "WCIS_FormCaravan".Translate(), active: cantSendReason == null) && cantSendReason == null)
             {
                 FormCaravan();
             }
+            GUI.color = Color.white;
             if (cantSendReason != null)
             {
                 TooltipHandler.TipRegion(formRect, cantSendReason);

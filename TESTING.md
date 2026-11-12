@@ -27,7 +27,8 @@ Things to verify by hand before a release. Restart RimWorld after deploying a ne
 - [x] Empire settlement with a permit holder: only that colonist (or those colonists) can be picked
 
 ## Form caravan
-- [x] Hostile settlement: **Form caravan** disabled with the hostile tooltip
+- [x] Hostile settlement: red warning under the faction name
+- [x] Hostile settlement: **Form caravan** visibly greyed out, with the hostile tooltip
 - [x] Selected items, pawns and the negotiator are pre-selected in the caravan window
 - [x] Picking one animal from a grouped row sends that exact animal
 - [x] Route skips the planner and is set to the settlement (*Change route* still works)
@@ -42,7 +43,7 @@ Things to verify by hand before a release. Restart RimWorld after deploying a ne
 - [x] Nearest buyer, tiles and travel days look right; hover lists the other buyers
 - [x] *Look within* presets and *Custom...* slider (up to 500) update the list; the choice is remembered after a restart
 - [x] Hostile settlements, and Empire settlements nobody can trade with, are never listed as buyers
-- [x] Travel days are grey, like the tile count
+- [x] Travel days use the game's cyan duration colour, like the vanilla caravan window
 - [x] Clicking a buyer closes the window, moves the world camera to that settlement and selects it
 - [x] *Select all* is hidden in this list
 

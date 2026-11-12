@@ -33,7 +33,6 @@
   <WCIS_LookWithinCustom>Custom...</WCIS_LookWithinCustom>
   <WCIS_LookWithinSlider>Look within {0} tiles</WCIS_LookWithinSlider>
   <WCIS_Tiles>{0} tiles</WCIS_Tiles>
-  <WCIS_Days>{0} days</WCIS_Days>
   <WCIS_ColNearestBuyer>Nearest buyer</WCIS_ColNearestBuyer>
   <WCIS_BuyersTip>Settlements within {0} tiles that buy this:</WCIS_BuyersTip>
   <WCIS_OpenBuyer>Click to show {0} on the world map.</WCIS_OpenBuyer>
@@ -45,6 +44,7 @@
   <WCIS_SelectAll>Select all</WCIS_SelectAll>
   <WCIS_Clear>Clear</WCIS_Clear>
   <WCIS_FormCaravan>Form caravan</WCIS_FormCaravan>
+  <WCIS_HostileBanner>Hostile faction: you can't trade here, and a caravan sent here would attack.</WCIS_HostileBanner>
   <WCIS_HostileNoCaravan>This faction is hostile, so a caravan sent here would attack instead of trading.</WCIS_HostileNoCaravan>
   <WCIS_Favor>{0} favor</WCIS_Favor>
   <WCIS_AutoSuppliesOff>Automatic travel supply selection was turned off so it won't overwrite the food or medicine you chose to sell. Add travel supplies manually.</WCIS_AutoSuppliesOff>
