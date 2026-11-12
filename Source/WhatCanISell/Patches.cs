@@ -35,7 +35,7 @@ namespace WhatCanISell
             {
                 defaultLabel = "WCIS_CommandLabel".Translate(),
                 defaultDesc = "WCIS_CommandDesc".Translate(),
-                icon = Settlement.ShowSellableItemsCommand,
+                icon = Textures.ThingsYouCanSell,
                 action = () => Find.WindowStack.Add(new Dialog_ThingsYouCanSell(settlement)),
             };
         }

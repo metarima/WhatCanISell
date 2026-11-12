@@ -52,9 +52,11 @@ If your RimWorld or Harmony install is somewhere else, pass `-p:RimWorldDir="...
 ```
 About/About.xml                         mod metadata
 Languages/English/Keyed/WhatCanISell.xml UI strings
+Textures/UI/Commands/                   settlement button icon
 Source/WhatCanISell/
   WhatCanISellMod.cs          entry point, applies Harmony patches
   Patches.cs                  settlement gizmo + button in vanilla "will buy" window
+  Textures.cs                 loads the button icon
   SellableStock.cs            gathers sellable colony items, estimates prices
   Dialog_ThingsYouCanSell.cs  the window
   FormCaravanPrefill.cs       opens Form Caravan with the selection applied
