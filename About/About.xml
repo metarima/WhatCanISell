@@ -17,11 +17,19 @@
   <loadAfter>
     <li>brrainz.harmony</li>
   </loadAfter>
-  <description>Adds a "Things you can sell" button to world settlements (and to the vanilla "Things this trader will buy" window).
+  <description>Shows which of your items, prisoners, slaves and animals a settlement will buy, and lets you form a caravan with them already selected.
 
-It cross-references what the settlement's trader will buy with what your colony actually has (items in storage, plus prisoners, slaves and animals) and shows it like a trade screen: how many you have, market value, and an estimated sell price based on your best negotiator.
+- "Things you can sell" button on settlements, and in the vanilla "Things this trader will buy" window
+- Lists only what you have that the trader wants
+- Shows how many you have, market value and estimated sell price
+- Pick a negotiator to see prices with their skill; they're added to the caravan
+- Only colonists allowed to trade there can negotiate, e.g. the Empire's required title
+- Tabs for items, prisoners and slaves, and animals
+- Search, and sort by value or name
+- Choose amounts, press "Form caravan", and the caravan window opens with them selected and the settlement set as the destination
 
-Pick amounts, press "Form caravan", and the vanilla Form Caravan window opens with those already selected and the settlement set as the destination. Add your colonists and travel supplies as usual.
+You can't trade from this window, it is a planning tool.
+You will have to add colonists and travel supplies in the caravan window as usual.
 
-You cannot trade from this window. It is a planning tool.</description>
+Safe to add to or remove from existing saves.</description>
 </ModMetaData>

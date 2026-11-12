@@ -1,0 +1,25 @@
+Shows which of your items, prisoners, slaves and animals a settlement will buy, and lets you form a caravan with them already selected.
+
+[h2]Features[/h2]
+[list]
+[*]"Things you can sell" button on settlements, and in the vanilla "Things this trader will buy" window
+[*]Lists only what you have that the trader wants
+[*]Shows how many you have, market value and estimated sell price
+[*]Pick a negotiator to see prices with their skill; they're added to the caravan
+[*]Only colonists allowed to trade there can negotiate, e.g. the Empire's required title
+[*]Tabs for items, prisoners and slaves, and animals
+[*]Search, and sort by value or name
+[*]Choose amounts, press "Form caravan", and the caravan window opens with them selected and the settlement set as the destination
+[/list]
+
+You can't trade from this window, it is a planning tool.
+You will have to add colonists and travel supplies in the caravan window as usual.
+
+[h2]Notes[/h2]
+[list]
+[*]Requires [url=https://steamcommunity.com/sharedfiles/filedetails/?id=2009463077]Harmony[/url]
+[*]Safe to add to or remove from existing saves
+[*]"Form caravan" is disabled for hostile settlements
+[/list]
+
+[url=https://github.com/metarima/WhatCanISell]Source on GitHub[/url]

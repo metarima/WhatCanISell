@@ -63,7 +63,7 @@ namespace WhatCanISell
         private void SetMap(Map newMap)
         {
             map = newMap;
-            negotiator = SellableStock.NegotiatorCandidates(map).FirstOrDefault();
+            negotiator = SellableStock.NegotiatorCandidates(map, settlement).FirstOrDefault();
             entries = SellableStock.Gather(map, settlement, negotiator);
             scrollPosition = Vector2.zero;
         }
@@ -130,14 +130,16 @@ namespace WhatCanISell
                 : "WCIS_NoNegotiator".Translate().ToString();
             if (Widgets.ButtonText(negotiatorRect, negotiatorLabel))
             {
-                List<Pawn> candidates = SellableStock.NegotiatorCandidates(map);
+                List<Pawn> candidates = SellableStock.NegotiatorCandidates(map, settlement);
                 if (candidates.Any())
                 {
                     var options = candidates.Select(p => new FloatMenuOption(NegotiatorLabel(p), () => SetNegotiator(p))).ToList();
                     Find.WindowStack.Add(new FloatMenu(options));
                 }
             }
-            TooltipHandler.TipRegion(negotiatorRect, "WCIS_NegotiatorTip".Translate());
+            TooltipHandler.TipRegion(negotiatorRect, negotiator != null
+                ? "WCIS_NegotiatorTip".Translate()
+                : SellableStock.NoNegotiatorReason(settlement));
             x += negotiatorRect.width + 8f;
 
             Rect sortRect = new Rect(x, rect.y, 170f, rect.height);
@@ -403,18 +405,35 @@ namespace WhatCanISell
                 SoundDefOf.Tick_Low.PlayOneShotOnCamera();
             }
 
-            // A caravan sent to a hostile settlement takes the first available arrival
-            // action there, which is "attack".
-            bool canSend = map != null && SellableStock.CanSendCaravanTo(settlement);
+            string cantSendReason = CantSendReason();
             Rect formRect = new Rect(rect.xMax - BottomButtonSize.x, buttonY, BottomButtonSize.x, BottomButtonSize.y);
-            if (Widgets.ButtonText(formRect, "WCIS_FormCaravan".Translate(), active: canSend) && canSend)
+            if (Widgets.ButtonText(formRect, "WCIS_FormCaravan".Translate(), active: cantSendReason == null) && cantSendReason == null)
             {
                 FormCaravan();
             }
-            if (!canSend && map != null)
+            if (cantSendReason != null)
             {
-                TooltipHandler.TipRegion(formRect, "WCIS_HostileNoCaravan".Translate());
+                TooltipHandler.TipRegion(formRect, cantSendReason);
             }
+        }
+
+        private string CantSendReason()
+        {
+            if (map == null)
+            {
+                return "WCIS_NoColony".Translate();
+            }
+            // A caravan sent to a hostile settlement takes the first available arrival
+            // action there, which is "attack".
+            if (!SellableStock.CanSendCaravanTo(settlement))
+            {
+                return "WCIS_HostileNoCaravan".Translate();
+            }
+            if (negotiator == null)
+            {
+                return SellableStock.NoNegotiatorReason(settlement);
+            }
+            return null;
         }
 
         private void FormCaravan()
@@ -423,6 +442,7 @@ namespace WhatCanISell
                 .Where(e => e.Selected > 0)
                 .Select(e => (e.transferable.things.ToList(), e.Selected))
                 .ToList();
+            selections.Add((new List<Thing> { negotiator }, 1));
             Close(doCloseSound: false);
             FormCaravanPrefill.Open(map, settlement, selections);
         }

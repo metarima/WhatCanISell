@@ -198,16 +198,30 @@ namespace WhatCanISell
             return sell;
         }
 
-        public static List<Pawn> NegotiatorCandidates(Map map)
+        // Same rules vanilla uses to pick a caravan's negotiator (BestCaravanPawnUtility, CaravanVisitUtility),
+        // limited to colonists the Form Caravan window can send.
+        public static List<Pawn> NegotiatorCandidates(Map map, Settlement settlement)
         {
             if (map == null)
             {
                 return new List<Pawn>();
             }
+            var sendable = new HashSet<Pawn>(Dialog_FormCaravan.AllSendablePawns(map, reform: false));
             return map.mapPawns.FreeColonistsSpawned
-                .Where(p => p.skills != null && !p.skills.GetSkill(SkillDefOf.Social).TotallyDisabled)
+                .Where(p => sendable.Contains(p)
+                    && !p.Downed && !p.InMentalState
+                    && !StatDefOf.TradePriceImprovement.Worker.IsDisabledFor(p)
+                    && p.CanTradeWith(settlement.Faction, settlement.TraderKind).Accepted)
                 .OrderByDescending(p => p.GetStatValue(StatDefOf.TradePriceImprovement))
                 .ToList();
+        }
+
+        public static string NoNegotiatorReason(Settlement settlement)
+        {
+            RoyalTitlePermitDef permit = settlement.TraderKind.permitRequiredForTrading;
+            return permit != null
+                ? "CommandTradeFailNeedPermit".Translate(permit.LabelCap)
+                : "CommandTradeFailNoNegotiator".Translate();
         }
 
         public static string FormatPrice(float amount, Settlement settlement)
