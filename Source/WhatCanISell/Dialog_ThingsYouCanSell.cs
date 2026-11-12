@@ -35,11 +35,12 @@ namespace WhatCanISell
         private const float HeaderHeight = 24f;
         private const float BottomAreaHeight = 78f;
         private const float ControlsHeight = 28f;
-        private const float ColTotal = 110f;
+        private const float ColTotal = 90f;
         private const float ColAdjust = 240f;
-        private const float ColPrice = 110f;
+        private const float ColPrice = 100f;
         private const float ColMarket = 100f;
-        private const float ColStorage = 80f;
+        private const float ColStorage = 90f;
+        private const float SearchWidth = 220f;
         private const float IconX = 30f;
         private const float LabelX = 60f;
         private static readonly Vector2 BottomButtonSize = new Vector2(160f, 40f);
@@ -84,21 +85,29 @@ namespace WhatCanISell
             y += 36f;
 
             Text.Font = GameFont.Small;
-            string subtitle = settlement.Faction.Name + " · " + settlement.TraderKind.LabelCap;
+            GUI.color = Color.gray;
+            string subtitle = settlement.Faction.Name;
+            string traderLabel = settlement.TraderKind.LabelCap;
+            if (!traderLabel.NullOrEmpty())
+            {
+                subtitle += " · " + traderLabel;
+            }
             Widgets.Label(new Rect(0f, y, inRect.width, 24f), subtitle);
-            y += 26f;
+            GUI.color = Color.white;
+            y += 24f;
 
             RoyalTitleDef titleRequired = settlement.TraderKind.TitleRequiredToTrade;
             if (titleRequired != null)
             {
-                GUI.color = ColorLibrary.RedReadable;
+                GUI.color = negotiator == null ? ColorLibrary.RedReadable : Color.gray;
                 Widgets.Label(new Rect(0f, y, inRect.width, 24f), "WCIS_RequiresTitle".Translate(titleRequired.GetLabelCapForBothGenders()));
                 GUI.color = Color.white;
-                y += 26f;
+                y += 24f;
             }
 
+            y += 6f;
             DrawControls(new Rect(0f, y, inRect.width, ControlsHeight));
-            y += ControlsHeight + 8f;
+            y += ControlsHeight + 10f;
             Text.Anchor = TextAnchor.UpperLeft;
 
             y += TabsHeight;
@@ -149,7 +158,8 @@ namespace WhatCanISell
                 SoundDefOf.Tick_Tiny.PlayOneShotOnCamera();
             }
 
-            Rect searchRect = new Rect(rect.xMax - 250f, rect.y + 2f, 250f, QuickSearchWidget.WidgetHeight);
+            // Inset from the window edge: a text field ending exactly on it loses its right border.
+            Rect searchRect = new Rect(rect.xMax - SearchWidth - 4f, rect.y + (rect.height - QuickSearchWidget.WidgetHeight) / 2f, SearchWidth, QuickSearchWidget.WidgetHeight);
             search.OnGUI(searchRect, () => scrollPosition = Vector2.zero);
         }
 
@@ -234,6 +244,9 @@ namespace WhatCanISell
             Rect priceHeader = ColumnRect(header, width, 2);
             Widgets.Label(priceHeader, "WCIS_ColSellPrice".Translate());
             TooltipHandler.TipRegion(priceHeader, "WCIS_SellPriceTip".Translate());
+            Text.Anchor = TextAnchor.MiddleCenter;
+            Widgets.Label(ColumnRect(header, width, 1), "WCIS_ColSell".Translate());
+            Text.Anchor = TextAnchor.MiddleRight;
             Widgets.Label(ColumnRect(header, width, 0), "WCIS_ColTotal".Translate());
             GUI.color = Color.white;
             Widgets.DrawLineHorizontal(rect.x, header.yMax + 1f, width);
@@ -275,7 +288,11 @@ namespace WhatCanISell
             Thing thing = trad.AnyThing;
             float width = row.width;
 
-            if (index % 2 == 1)
+            if (entry.Selected > 0)
+            {
+                Widgets.DrawHighlightSelected(row);
+            }
+            else if (index % 2 == 1)
             {
                 Widgets.DrawLightHighlight(row);
             }
@@ -312,7 +329,21 @@ namespace WhatCanISell
 
             Text.Anchor = TextAnchor.UpperLeft;
             Rect adjustRect = ColumnRect(row, width, 1);
-            TransferableUIUtility.DoCountAdjustInterface(adjustRect, trad, index, 0, entry.Available);
+            if (entry.IsPawn && entry.Available == 1)
+            {
+                // Vanilla draws single pawns as an off-centre checkbox; centre it in the column instead.
+                bool on = entry.Selected > 0;
+                bool was = on;
+                Widgets.Checkbox(new Vector2(adjustRect.center.x - 12f, adjustRect.center.y - 12f), ref on, 24f, paintable: true);
+                if (on != was)
+                {
+                    trad.AdjustTo(on ? 1 : 0);
+                }
+            }
+            else
+            {
+                TransferableUIUtility.DoCountAdjustInterface(adjustRect, trad, index, 0, entry.Available);
+            }
 
             Text.Anchor = TextAnchor.MiddleRight;
             if (entry.Selected > 0)

@@ -13,7 +13,8 @@ Things to verify by hand before a release. Restart RimWorld after deploying a ne
 - [ ] Prisoners, slaves and animals appear in their tabs; tab counts match
 - [ ] Identical unnamed animals share one row with a count; named, bonded or pregnant ones get their own row
 - [ ] Captive rows show the ransom/slavery icon; animal rows show bonded/pregnant/sick/rideable icons
-- [ ] Search and *Sort: total value / name* work
+- [ ] Search and *Sort: total value / name* work; search box fully visible
+- [ ] Single pawns show a centred checkbox; selected rows stay highlighted
 - [ ] With more than one colony, the colony dropdown switches the list
 
 ## Prices

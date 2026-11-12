@@ -9,7 +9,8 @@
   <WCIS_NegotiatorTip>Estimated sell prices use this pawn's trade price improvement. The real price depends on who actually negotiates when the caravan arrives.</WCIS_NegotiatorTip>
   <WCIS_RequiresTitle>Trading here requires the title: {0}</WCIS_RequiresTitle>
   <WCIS_ColItem>Item</WCIS_ColItem>
-  <WCIS_ColInStorage>In storage</WCIS_ColInStorage>
+  <WCIS_ColInStorage>Available</WCIS_ColInStorage>
+  <WCIS_ColSell>Sell</WCIS_ColSell>
   <WCIS_ColMarketValue>Market value</WCIS_ColMarketValue>
   <WCIS_ColSellPrice>Est. sell price</WCIS_ColSellPrice>
   <WCIS_ColTotal>Est. total</WCIS_ColTotal>
