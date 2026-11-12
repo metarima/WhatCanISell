@@ -22,6 +22,20 @@
   <WCIS_TabItems>Items</WCIS_TabItems>
   <WCIS_TabCaptives>Prisoners &amp; slaves</WCIS_TabCaptives>
   <WCIS_TabAnimals>Animals</WCIS_TabAnimals>
+  <WCIS_ModeBuys>{0} buys ({1})</WCIS_ModeBuys>
+  <WCIS_ModeBuysTip>Things from your colony that {0} will buy.</WCIS_ModeBuysTip>
+  <WCIS_ModeWontBuy>{0} won't buy ({1})</WCIS_ModeWontBuy>
+  <WCIS_ModeWontBuyTip>Things {0} won't buy, and the nearest settlement that will.</WCIS_ModeWontBuyTip>
+  <WCIS_ElsewhereHint>Settlements nearby that buy what {0} won't. Click one to find it on the map.</WCIS_ElsewhereHint>
+  <WCIS_LookWithin>Look within: {0} tiles</WCIS_LookWithin>
+  <WCIS_LookWithinTip>How far to look for other settlements, in tiles from your colony.</WCIS_LookWithinTip>
+  <WCIS_LookWithinCustom>Custom...</WCIS_LookWithinCustom>
+  <WCIS_LookWithinSlider>Look within {0} tiles</WCIS_LookWithinSlider>
+  <WCIS_Tiles>{0} tiles</WCIS_Tiles>
+  <WCIS_ColNearestBuyer>Nearest buyer</WCIS_ColNearestBuyer>
+  <WCIS_BuyersTip>Settlements within {0} tiles that buy this:</WCIS_BuyersTip>
+  <WCIS_OpenBuyer>Click to show {0} on the world map.</WCIS_OpenBuyer>
+  <WCIS_NothingElsewhere>No other settlement within {0} tiles buys anything this trader won't.</WCIS_NothingElsewhere>
   <WCIS_Prisoner>prisoner</WCIS_Prisoner>
   <WCIS_Slave>slave</WCIS_Slave>
   <WCIS_SortByName>Sort: name</WCIS_SortByName>

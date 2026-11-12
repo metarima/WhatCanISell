@@ -11,9 +11,28 @@ namespace WhatCanISell
     {
         public const string LogPrefix = "[What Can I Sell?] ";
 
+        public static WhatCanISellMod Instance { get; private set; }
+        public static WhatCanISellSettings Settings { get; private set; }
+
         public WhatCanISellMod(ModContentPack content) : base(content)
         {
+            Instance = this;
+            Settings = GetSettings<WhatCanISellSettings>();
             new Harmony("luissousa.whatcanisell").PatchAll();
+        }
+    }
+
+    public class WhatCanISellSettings : ModSettings
+    {
+        public const int DefaultLookWithinTiles = 25;
+        public const int MaxLookWithinTiles = 500;
+
+        public int lookWithinTiles = DefaultLookWithinTiles;
+
+        public override void ExposeData()
+        {
+            base.ExposeData();
+            Scribe_Values.Look(ref lookWithinTiles, "lookWithinTiles", DefaultLookWithinTiles);
         }
     }
 }

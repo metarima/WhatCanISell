@@ -1,5 +1,7 @@
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Text;
 using RimWorld;
 using RimWorld.Planet;
 using UnityEngine;
@@ -14,13 +16,27 @@ namespace WhatCanISell
         private readonly List<Map> colonyMaps;
         private Map map;
         private Pawn negotiator;
+        private string negotiatorLabel;
         private List<SellableEntry> entries = new List<SellableEntry>();
+        private readonly List<SellableEntry> elsewhereCandidates = new List<SellableEntry>();
+        private List<SellableEntry> elsewhere = new List<SellableEntry>();
         private readonly List<SellableEntry> visible = new List<SellableEntry>();
+        private bool visibleDirty = true;
+        private bool showElsewhere;
+        private readonly int[,] tabCounts = new int[2, 4];
         private readonly QuickSearchWidget search = new QuickSearchWidget();
         private Vector2 scrollPosition;
         private bool sortByValue = true;
         private Tab tab = Tab.All;
         private readonly List<TabRecord> tabs = new List<TabRecord>();
+        private readonly Dictionary<string, string> truncated = new Dictionary<string, string>();
+        private readonly Dictionary<Settlement, string> travelTimes = new Dictionary<Settlement, string>();
+
+        private readonly Stopwatch watch = new Stopwatch();
+        private double gatherMs;
+        private double buyersMs;
+        private double drawMs;
+        private int drawFrames;
 
         private enum Tab
         {
@@ -32,6 +48,7 @@ namespace WhatCanISell
 
         private const float RowHeight = 30f;
         private const float TabsHeight = 32f;
+        private const float ModesHeight = 32f;
         private const float HeaderHeight = 24f;
         private const float BottomAreaHeight = 78f;
         private const float ControlsHeight = 28f;
@@ -40,12 +57,16 @@ namespace WhatCanISell
         private const float ColPrice = 100f;
         private const float ColMarket = 100f;
         private const float ColStorage = 90f;
+        private const float ColBuyer = 330f;
         private const float SearchWidth = 220f;
         private const float IconX = 30f;
         private const float LabelX = 60f;
         private static readonly Vector2 BottomButtonSize = new Vector2(160f, 40f);
+        private static readonly int[] LookWithinPresets = { 10, 25, 50, 100, 200 };
 
         public override Vector2 InitialSize => new Vector2(Mathf.Min(UI.screenWidth, 980f), Mathf.Min(UI.screenHeight, 900f));
+
+        private static int LookWithin => WhatCanISellMod.Settings.lookWithinTiles;
 
         public Dialog_ThingsYouCanSell(Settlement settlement)
         {
@@ -64,18 +85,71 @@ namespace WhatCanISell
         private void SetMap(Map newMap)
         {
             map = newMap;
+            watch.Restart();
             negotiator = SellableStock.NegotiatorCandidates(map, settlement).FirstOrDefault();
-            entries = SellableStock.Gather(map, settlement, negotiator);
+            negotiatorLabel = null;
+            entries = SellableStock.Gather(map, settlement, negotiator, elsewhereCandidates);
+            gatherMs = watch.Elapsed.TotalMilliseconds;
+            UpdateBuyers();
             scrollPosition = Vector2.zero;
+        }
+
+        private void UpdateBuyers()
+        {
+            watch.Restart();
+            elsewhere = SellableStock.FindBuyers(map, settlement, elsewhereCandidates, LookWithin);
+            SellableStock.UpdatePrices(elsewhere, settlement, negotiator);
+            buyersMs = watch.Elapsed.TotalMilliseconds;
+            CountTabs(0, entries);
+            CountTabs(1, elsewhere);
+            visibleDirty = true;
+        }
+
+        private void CountTabs(int mode, List<SellableEntry> list)
+        {
+            tabCounts[mode, (int)Tab.All] = list.Count;
+            tabCounts[mode, (int)Tab.Items] = list.Count(e => e.kind == SellableKind.Item);
+            tabCounts[mode, (int)Tab.Captives] = list.Count(e => e.kind == SellableKind.Captive);
+            tabCounts[mode, (int)Tab.Animals] = list.Count(e => e.kind == SellableKind.Animal);
         }
 
         private void SetNegotiator(Pawn pawn)
         {
             negotiator = pawn;
+            negotiatorLabel = null;
             SellableStock.UpdatePrices(entries, settlement, negotiator);
+            SellableStock.UpdatePrices(elsewhere, settlement, negotiator);
+            visibleDirty = true;
+        }
+
+        private void SetLookWithin(int tiles)
+        {
+            WhatCanISellMod.Settings.lookWithinTiles = Mathf.Clamp(tiles, 1, WhatCanISellSettings.MaxLookWithinTiles);
+            WhatCanISellMod.Instance.WriteSettings();
+            UpdateBuyers();
         }
 
         public override void DoWindowContents(Rect inRect)
+        {
+            long start = Stopwatch.GetTimestamp();
+            DrawContents(inRect);
+            drawMs += (Stopwatch.GetTimestamp() - start) * 1000.0 / Stopwatch.Frequency;
+            if (Event.current.type == EventType.Repaint)
+            {
+                drawFrames++;
+            }
+        }
+
+        public override void PostClose()
+        {
+            base.PostClose();
+            if (Prefs.DevMode && drawFrames > 0)
+            {
+                Log.Message(WhatCanISellMod.LogPrefix + $"gather {gatherMs:0.00} ms, buyers within {LookWithin} tiles {buyersMs:0.00} ms, window {drawMs / drawFrames:0.000} ms per frame over {drawFrames} frames");
+            }
+        }
+
+        private void DrawContents(Rect inRect)
         {
             float y = 0f;
 
@@ -108,12 +182,21 @@ namespace WhatCanISell
             y += 6f;
             DrawControls(new Rect(0f, y, inRect.width, ControlsHeight));
             y += ControlsHeight + 10f;
+            DrawModes(new Rect(0f, y, inRect.width, ModesHeight));
+            y += ModesHeight + 8f;
             Text.Anchor = TextAnchor.UpperLeft;
 
             y += TabsHeight;
             Rect listRect = new Rect(0f, y, inRect.width, inRect.height - y - BottomAreaHeight);
             DrawTabs(listRect);
-            DrawList(listRect.ContractedBy(4f));
+            if (showElsewhere)
+            {
+                DrawElsewhereList(listRect.ContractedBy(4f));
+            }
+            else
+            {
+                DrawList(listRect.ContractedBy(4f));
+            }
 
             DrawBottom(new Rect(0f, inRect.height - BottomAreaHeight, inRect.width, BottomAreaHeight));
             Text.Anchor = TextAnchor.UpperLeft;
@@ -134,7 +217,7 @@ namespace WhatCanISell
             }
 
             Rect negotiatorRect = new Rect(x, rect.y, 290f, rect.height);
-            string negotiatorLabel = negotiator != null
+            negotiatorLabel ??= negotiator != null
                 ? "WCIS_Negotiator".Translate(NegotiatorLabel(negotiator)).ToString()
                 : "WCIS_NoNegotiator".Translate().ToString();
             if (Widgets.ButtonText(negotiatorRect, negotiatorLabel))
@@ -146,21 +229,29 @@ namespace WhatCanISell
                     Find.WindowStack.Add(new FloatMenu(options));
                 }
             }
-            TooltipHandler.TipRegion(negotiatorRect, negotiator != null
-                ? "WCIS_NegotiatorTip".Translate()
-                : SellableStock.NoNegotiatorReason(settlement));
+            if (Mouse.IsOver(negotiatorRect))
+            {
+                TooltipHandler.TipRegion(negotiatorRect, negotiator != null
+                    ? "WCIS_NegotiatorTip".Translate()
+                    : SellableStock.NoNegotiatorReason(settlement));
+            }
             x += negotiatorRect.width + 8f;
 
             Rect sortRect = new Rect(x, rect.y, 170f, rect.height);
             if (Widgets.ButtonText(sortRect, sortByValue ? "WCIS_SortByValue".Translate() : "WCIS_SortByName".Translate()))
             {
                 sortByValue = !sortByValue;
+                visibleDirty = true;
                 SoundDefOf.Tick_Tiny.PlayOneShotOnCamera();
             }
 
             // Inset from the window edge: a text field ending exactly on it loses its right border.
             Rect searchRect = new Rect(rect.xMax - SearchWidth - 4f, rect.y + (rect.height - QuickSearchWidget.WidgetHeight) / 2f, SearchWidth, QuickSearchWidget.WidgetHeight);
-            search.OnGUI(searchRect, () => scrollPosition = Vector2.zero);
+            search.OnGUI(searchRect, () =>
+            {
+                scrollPosition = Vector2.zero;
+                visibleDirty = true;
+            });
         }
 
         private static string NegotiatorLabel(Pawn pawn)
@@ -168,23 +259,55 @@ namespace WhatCanISell
             return pawn.LabelShortCap + " (" + pawn.GetStatValue(StatDefOf.TradePriceImprovement).ToStringPercent() + ")";
         }
 
+        // Two lists, not two categories: what this settlement buys, and what it won't (with who will).
+        private void DrawModes(Rect rect)
+        {
+            float width = Mathf.Min(320f, (rect.width - 8f) / 2f);
+            DrawMode(new Rect(rect.x, rect.y, width, rect.height), false,
+                "WCIS_ModeBuys".Translate(settlement.LabelCap, tabCounts[0, (int)Tab.All]), "WCIS_ModeBuysTip".Translate(settlement.LabelCap));
+            DrawMode(new Rect(rect.x + width + 8f, rect.y, width, rect.height), true,
+                "WCIS_ModeWontBuy".Translate(settlement.LabelCap, tabCounts[1, (int)Tab.All]), "WCIS_ModeWontBuyTip".Translate(settlement.LabelCap));
+        }
+
+        private void DrawMode(Rect rect, bool elsewhereMode, string label, string tip)
+        {
+            bool selected = showElsewhere == elsewhereMode;
+            if (Widgets.ButtonText(rect, label.Truncate(rect.width - 16f, truncated)) && !selected)
+            {
+                showElsewhere = elsewhereMode;
+                scrollPosition = Vector2.zero;
+                visibleDirty = true;
+                SoundDefOf.Tick_Tiny.PlayOneShotOnCamera();
+            }
+            if (selected)
+            {
+                Widgets.DrawHighlightSelected(rect);
+                Widgets.DrawBox(rect);
+            }
+            if (Mouse.IsOver(rect))
+            {
+                TooltipHandler.TipRegion(rect, tip);
+            }
+        }
+
         private void DrawTabs(Rect listRect)
         {
             Widgets.DrawMenuSection(listRect);
             tabs.Clear();
-            AddTab(Tab.All, "WCIS_TabAll", entries.Count);
-            AddTab(Tab.Items, "WCIS_TabItems", entries.Count(e => e.kind == SellableKind.Item));
-            AddTab(Tab.Captives, "WCIS_TabCaptives", entries.Count(e => e.kind == SellableKind.Captive));
-            AddTab(Tab.Animals, "WCIS_TabAnimals", entries.Count(e => e.kind == SellableKind.Animal));
+            AddTab(Tab.All, "WCIS_TabAll");
+            AddTab(Tab.Items, "WCIS_TabItems");
+            AddTab(Tab.Captives, "WCIS_TabCaptives");
+            AddTab(Tab.Animals, "WCIS_TabAnimals");
             TabDrawer.DrawTabs(listRect, tabs);
         }
 
-        private void AddTab(Tab which, string key, int count)
+        private void AddTab(Tab which, string key)
         {
-            tabs.Add(new TabRecord(key.Translate() + " (" + count + ")", () =>
+            tabs.Add(new TabRecord(key.Translate() + " (" + tabCounts[showElsewhere ? 1 : 0, (int)which] + ")", () =>
             {
                 tab = which;
                 scrollPosition = Vector2.zero;
+                visibleDirty = true;
             }, tab == which));
         }
 
@@ -199,10 +322,16 @@ namespace WhatCanISell
             }
         }
 
-        private void RebuildVisible()
+        // Rebuilt only when the tab, search, sort, prices or stock change; nothing else moves while the game is paused.
+        private void RebuildVisibleIfDirty()
         {
+            if (!visibleDirty)
+            {
+                return;
+            }
+            visibleDirty = false;
             visible.Clear();
-            foreach (SellableEntry entry in entries)
+            foreach (SellableEntry entry in showElsewhere ? elsewhere : entries)
             {
                 if (!entry.transferable.HasAnyThing || !InCurrentTab(entry))
                 {
@@ -253,16 +382,12 @@ namespace WhatCanISell
             Text.Anchor = TextAnchor.UpperLeft;
 
             Rect outRect = new Rect(rect.x, header.yMax + 4f, rect.width, rect.height - HeaderHeight - 4f);
-            RebuildVisible();
+            RebuildVisibleIfDirty();
             if (visible.Count == 0)
             {
                 if (!search.filter.Active)
                 {
-                    Text.Anchor = TextAnchor.MiddleCenter;
-                    GUI.color = Color.gray;
-                    Widgets.Label(new Rect(outRect.x, outRect.y, outRect.width, 60f), "WCIS_Nothing".Translate());
-                    GUI.color = Color.white;
-                    Text.Anchor = TextAnchor.UpperLeft;
+                    DrawEmpty(outRect, "WCIS_Nothing".Translate());
                 }
                 return;
             }
@@ -282,11 +407,20 @@ namespace WhatCanISell
             Widgets.EndScrollView();
         }
 
-        private void DrawRow(Rect row, SellableEntry entry, int index)
+        private static void DrawEmpty(Rect outRect, string text)
+        {
+            Text.Anchor = TextAnchor.MiddleCenter;
+            GUI.color = Color.gray;
+            Widgets.Label(new Rect(outRect.x, outRect.y, outRect.width, 60f), text);
+            GUI.color = Color.white;
+            Text.Anchor = TextAnchor.UpperLeft;
+        }
+
+        // Shared by both lists: highlight, info card, icon, pawn icons and label up to labelEnd.
+        private void DrawRowStart(Rect row, SellableEntry entry, int index, float labelEnd, Settlement trader)
         {
             TransferableOneWay trad = entry.transferable;
             Thing thing = trad.AnyThing;
-            float width = row.width;
 
             if (entry.Selected > 0)
             {
@@ -302,30 +436,40 @@ namespace WhatCanISell
             Widgets.ThingIcon(new Rect(IconX, row.y + (row.height - 27f) / 2f, 27f, 27f), thing);
 
             // These vanilla helpers draw right-to-left from curX in row-local coordinates.
-            float curX = ColumnStart(width, 4) - 6f;
+            float curX = labelEnd - 6f;
             if (entry.IsPawn)
             {
                 Widgets.BeginGroup(row);
                 Rect local = row.AtZero();
                 TransferableUIUtility.DoExtraIcons(trad, local, ref curX);
-                TransferableUIUtility.DrawCaptiveTradeInfo(trad, settlement, local, ref curX);
+                TransferableUIUtility.DrawCaptiveTradeInfo(trad, trader, local, ref curX);
                 Widgets.EndGroup();
             }
 
             Text.Anchor = TextAnchor.MiddleLeft;
             Rect labelRect = new Rect(LabelX, row.y, curX - LabelX - 4f, row.height);
-            Widgets.Label(labelRect, entry.Label.Truncate(labelRect.width));
+            Widgets.Label(labelRect, entry.Label.Truncate(labelRect.width, truncated));
             if (Mouse.IsOver(labelRect))
             {
                 TooltipHandler.TipRegion(labelRect, entry.Tooltip);
             }
+        }
+
+        private void DrawRow(Rect row, SellableEntry entry, int index)
+        {
+            TransferableOneWay trad = entry.transferable;
+            float width = row.width;
+            DrawRowStart(row, entry, index, ColumnStart(width, 4), settlement);
 
             Text.Anchor = TextAnchor.MiddleRight;
             Widgets.Label(ColumnRect(row, width, 4), entry.Available.ToStringCached());
             Widgets.Label(ColumnRect(row, width, 3), entry.marketValue.ToStringMoney());
             Rect priceRect = ColumnRect(row, width, 2);
             Widgets.Label(priceRect, SellableStock.FormatPrice(entry.sellPrice, settlement));
-            TooltipHandler.TipRegion(priceRect, "WCIS_SellPriceTip".Translate());
+            if (Mouse.IsOver(priceRect))
+            {
+                TooltipHandler.TipRegion(priceRect, "WCIS_SellPriceTip".Translate());
+            }
 
             Text.Anchor = TextAnchor.UpperLeft;
             Rect adjustRect = ColumnRect(row, width, 1);
@@ -362,23 +506,160 @@ namespace WhatCanISell
         // Columns counted from the right: 0 total, 1 count adjuster, 2 sell price, 3 market value, 4 in storage.
         private static readonly float[] ColumnWidths = { ColTotal, ColAdjust, ColPrice, ColMarket, ColStorage };
 
-        private static float ColumnStart(float width, int column)
+        // Sell elsewhere columns from the right: 0 nearest buyer, 1 sell price there, 2 available.
+        private static readonly float[] ElsewhereWidths = { ColBuyer, ColPrice, ColStorage };
+
+        private static float ColumnStart(float width, int column, float[] widths = null)
         {
+            widths ??= ColumnWidths;
             float x = width;
             for (int i = 0; i <= column; i++)
             {
-                x -= ColumnWidths[i];
+                x -= widths[i];
             }
             return x;
         }
 
-        private static Rect ColumnRect(Rect row, float width, int column)
+        private static Rect ColumnRect(Rect row, float width, int column, float[] widths = null)
         {
-            float start = row.x + ColumnStart(width, column);
-            float colWidth = ColumnWidths[column];
-            return column == 1
+            widths ??= ColumnWidths;
+            float start = row.x + ColumnStart(width, column, widths);
+            float colWidth = widths[column];
+            return widths == ColumnWidths && column == 1
                 ? new Rect(start, row.y, colWidth, row.height)
                 : new Rect(start, row.y, colWidth - 8f, row.height);
+        }
+
+        private void DrawElsewhereList(Rect rect)
+        {
+            if (map == null)
+            {
+                Widgets.Label(rect, "WCIS_NoColony".Translate());
+                return;
+            }
+
+            float width = rect.width - 16f;
+            Rect rangeRect = new Rect(rect.x + width - 200f, rect.y, 200f, ControlsHeight);
+            if (Widgets.ButtonText(rangeRect, "WCIS_LookWithin".Translate(LookWithin)))
+            {
+                var options = LookWithinPresets
+                    .Select(n => new FloatMenuOption("WCIS_Tiles".Translate(n), () => SetLookWithin(n)))
+                    .ToList();
+                options.Add(new FloatMenuOption("WCIS_LookWithinCustom".Translate(), () =>
+                    Find.WindowStack.Add(new Dialog_Slider(n => "WCIS_LookWithinSlider".Translate(n), 1, WhatCanISellSettings.MaxLookWithinTiles, SetLookWithin, LookWithin))));
+                Find.WindowStack.Add(new FloatMenu(options));
+            }
+            if (Mouse.IsOver(rangeRect))
+            {
+                TooltipHandler.TipRegion(rangeRect, "WCIS_LookWithinTip".Translate());
+            }
+            GUI.color = Color.gray;
+            Text.Anchor = TextAnchor.MiddleLeft;
+            Widgets.Label(new Rect(rect.x + LabelX, rect.y, rangeRect.x - rect.x - LabelX - 8f, ControlsHeight), "WCIS_ElsewhereHint".Translate(settlement.LabelCap));
+
+            Rect header = new Rect(rect.x, rangeRect.yMax + 6f, width, HeaderHeight);
+            Widgets.Label(new Rect(rect.x + LabelX, header.y, ColumnStart(width, 2, ElsewhereWidths) - LabelX, HeaderHeight), "WCIS_ColItem".Translate());
+            Text.Anchor = TextAnchor.MiddleRight;
+            Widgets.Label(ColumnRect(header, width, 2, ElsewhereWidths), "WCIS_ColInStorage".Translate());
+            Widgets.Label(ColumnRect(header, width, 1, ElsewhereWidths), "WCIS_ColSellPrice".Translate());
+            Text.Anchor = TextAnchor.MiddleLeft;
+            Rect buyerHeader = ColumnRect(header, width, 0, ElsewhereWidths);
+            Widgets.Label(new Rect(buyerHeader.x + 12f, buyerHeader.y, buyerHeader.width - 12f, buyerHeader.height), "WCIS_ColNearestBuyer".Translate());
+            GUI.color = Color.white;
+            Widgets.DrawLineHorizontal(rect.x, header.yMax + 1f, width);
+            Text.Anchor = TextAnchor.UpperLeft;
+
+            float top = header.yMax + 4f;
+            Rect outRect = new Rect(rect.x, top, rect.width, rect.yMax - top);
+            RebuildVisibleIfDirty();
+            if (visible.Count == 0)
+            {
+                if (!search.filter.Active)
+                {
+                    DrawEmpty(outRect, "WCIS_NothingElsewhere".Translate(LookWithin));
+                }
+                return;
+            }
+
+            Rect viewRect = new Rect(0f, 0f, width, visible.Count * RowHeight);
+            Widgets.BeginScrollView(outRect, ref scrollPosition, viewRect);
+            float minY = scrollPosition.y - RowHeight;
+            float maxY = scrollPosition.y + outRect.height;
+            for (int i = 0; i < visible.Count; i++)
+            {
+                float rowY = i * RowHeight;
+                if (rowY > minY && rowY < maxY)
+                {
+                    DrawElsewhereRow(new Rect(0f, rowY, width, RowHeight), visible[i], i);
+                }
+            }
+            Widgets.EndScrollView();
+        }
+
+        private void DrawElsewhereRow(Rect row, SellableEntry entry, int index)
+        {
+            float width = row.width;
+            Buyer nearest = entry.buyers[0];
+            DrawRowStart(row, entry, index, ColumnStart(width, 2, ElsewhereWidths), nearest.settlement);
+
+            Text.Anchor = TextAnchor.MiddleRight;
+            Widgets.Label(ColumnRect(row, width, 2, ElsewhereWidths), entry.Available.ToStringCached());
+            Widgets.Label(ColumnRect(row, width, 1, ElsewhereWidths), SellableStock.FormatPrice(entry.sellPrice, nearest.settlement));
+
+            Rect buyerRect = ColumnRect(row, width, 0, ElsewhereWidths);
+            buyerRect.xMin += 12f;
+            Text.Anchor = TextAnchor.MiddleLeft;
+            bool over = Mouse.IsOver(buyerRect);
+            GUI.color = over ? GenUI.MouseoverColor : Color.white;
+            string name = nearest.settlement.LabelCap;
+            float nameWidth = Mathf.Min(Text.CalcSize(name).x, buyerRect.width * 0.55f);
+            Widgets.Label(new Rect(buyerRect.x, buyerRect.y, nameWidth, buyerRect.height), name.Truncate(nameWidth, truncated));
+            GUI.color = Color.gray;
+            Widgets.Label(new Rect(buyerRect.x + nameWidth, buyerRect.y, buyerRect.width - nameWidth, buyerRect.height),
+                " · " + "WCIS_Tiles".Translate(nearest.tiles) + " · " + TravelTime(nearest.settlement));
+            GUI.color = Color.white;
+            Text.Anchor = TextAnchor.UpperLeft;
+
+            if (over)
+            {
+                TooltipHandler.TipRegion(buyerRect, BuyersTooltip(entry));
+            }
+            if (Widgets.ButtonInvisible(buyerRect))
+            {
+                // Show it on the world map rather than opening its window, so the player sees where it is first.
+                Close(doCloseSound: false);
+                CameraJumper.TryJumpAndSelect(nearest.settlement);
+            }
+        }
+
+        // Pathfinding is the costly part, so it runs once per settlement and only for buyers actually on screen.
+        private string TravelTime(Settlement buyer)
+        {
+            if (!travelTimes.TryGetValue(buyer, out string text))
+            {
+                int ticks = CaravanArrivalTimeEstimator.EstimatedTicksToArrive(map.Tile, buyer.Tile, null);
+                // The game's "days" text carries its own colour; keep it grey like the tile count.
+                text = ticks > 0 ? ticks.ToStringTicksToDays("0.#").StripTags() : "-";
+                travelTimes[buyer] = text;
+            }
+            return text;
+        }
+
+        private string BuyersTooltip(SellableEntry entry)
+        {
+            var sb = new StringBuilder();
+            sb.Append("WCIS_BuyersTip".Translate(LookWithin));
+            foreach (Buyer buyer in entry.buyers.Take(8))
+            {
+                sb.Append("\n  ").Append(buyer.settlement.LabelCap).Append(" (").Append(buyer.settlement.Faction.Name).Append(") · ")
+                    .Append("WCIS_Tiles".Translate(buyer.tiles));
+            }
+            if (entry.buyers.Count > 8)
+            {
+                sb.Append("\n  ...");
+            }
+            sb.Append("\n\n").Append("WCIS_OpenBuyer".Translate(entry.buyers[0].settlement.LabelCap));
+            return sb.ToString();
         }
 
         private void DrawBottom(Rect rect)
@@ -418,9 +699,10 @@ namespace WhatCanISell
             }
 
             float midX = rect.center.x;
-            if (Widgets.ButtonText(new Rect(midX - BottomButtonSize.x - 5f, buttonY, BottomButtonSize.x, BottomButtonSize.y), "WCIS_SelectAll".Translate()))
+            if (!showElsewhere
+                && Widgets.ButtonText(new Rect(midX - BottomButtonSize.x - 5f, buttonY, BottomButtonSize.x, BottomButtonSize.y), "WCIS_SelectAll".Translate()))
             {
-                RebuildVisible();
+                RebuildVisibleIfDirty();
                 foreach (SellableEntry entry in visible)
                 {
                     entry.transferable.AdjustTo(entry.Available);

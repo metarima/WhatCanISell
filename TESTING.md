@@ -34,6 +34,20 @@ Things to verify by hand before a release. Restart RimWorld after deploying a ne
 - [ ] Caravan travels to the settlement, with and without Instant Caravan
 - [ ] Selling food or medicine turns off auto travel supplies and shows the message
 
+## Won't buy list
+- [ ] *X buys* / *X won't buy* switch sits above the tabs and shows the selected list; counts match
+- [ ] Category tabs filter both lists, with their own counts
+- [ ] The list shows only things this trader won't buy that another settlement in range will
+- [ ] Nearest buyer, tiles and travel days look right; hover lists the other buyers
+- [ ] *Look within* presets and *Custom...* slider (up to 500) update the list; the choice is remembered after a restart
+- [ ] Hostile settlements, and Empire settlements nobody can trade with, are never listed as buyers
+- [ ] Travel days are grey, like the tile count
+- [ ] Clicking a buyer closes the window, moves the world camera to that settlement and selects it
+- [ ] *Select all* is hidden in this list
+
+## Performance
+- [ ] With dev mode on, closing the window logs gather, buyers and per-frame times
+
 ## Saves
 - [ ] Adding the mod to an existing save loads without errors
 - [ ] Removing it loads without errors (only the mod-list mismatch warning)
