@@ -37,6 +37,7 @@ Things to verify by hand before a release. Restart RimWorld after deploying a ne
 ## Won't buy list
 - [ ] *X buys* / *X won't buy* switch sits above the tabs and shows the selected list; counts match
 - [ ] Category tabs filter both lists, with their own counts
+- [ ] A tab that's empty in one list shows *Nothing in this tab.*, not the "no buyer" message
 - [ ] The list shows only things this trader won't buy that another settlement in range will
 - [ ] Nearest buyer, tiles and travel days look right; hover lists the other buyers
 - [ ] *Look within* presets and *Custom...* slider (up to 500) update the list; the choice is remembered after a restart

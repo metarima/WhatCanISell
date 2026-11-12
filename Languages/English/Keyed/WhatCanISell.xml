@@ -16,6 +16,7 @@
   <WCIS_ColTotal>Est. total</WCIS_ColTotal>
   <WCIS_SellPriceTip>Estimated price this trader pays per unit, using the chosen negotiator, the faction's price offset, and your difficulty settings.</WCIS_SellPriceTip>
   <WCIS_Nothing>Nothing here is wanted by this trader.</WCIS_Nothing>
+  <WCIS_NothingInTab>Nothing in this tab.</WCIS_NothingInTab>
   <WCIS_NoColony>You have no colony map to sell from.</WCIS_NoColony>
   <WCIS_Summary>Selected: {0} items · {1} pawns · {2} kg · est. {3}</WCIS_Summary>
   <WCIS_TabAll>All</WCIS_TabAll>
@@ -32,6 +33,7 @@
   <WCIS_LookWithinCustom>Custom...</WCIS_LookWithinCustom>
   <WCIS_LookWithinSlider>Look within {0} tiles</WCIS_LookWithinSlider>
   <WCIS_Tiles>{0} tiles</WCIS_Tiles>
+  <WCIS_Days>{0} days</WCIS_Days>
   <WCIS_ColNearestBuyer>Nearest buyer</WCIS_ColNearestBuyer>
   <WCIS_BuyersTip>Settlements within {0} tiles that buy this:</WCIS_BuyersTip>
   <WCIS_OpenBuyer>Click to show {0} on the world map.</WCIS_OpenBuyer>

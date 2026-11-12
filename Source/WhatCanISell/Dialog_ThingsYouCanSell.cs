@@ -387,7 +387,7 @@ namespace WhatCanISell
             {
                 if (!search.filter.Active)
                 {
-                    DrawEmpty(outRect, "WCIS_Nothing".Translate());
+                    DrawEmpty(outRect, EmptyText("WCIS_Nothing".Translate()));
                 }
                 return;
             }
@@ -405,6 +405,12 @@ namespace WhatCanISell
                 }
             }
             Widgets.EndScrollView();
+        }
+
+        // A tab can be empty while the list itself isn't, e.g. Animals in the "won't buy" list.
+        private string EmptyText(string whenListEmpty)
+        {
+            return tabCounts[showElsewhere ? 1 : 0, (int)Tab.All] > 0 ? "WCIS_NothingInTab".Translate().ToString() : whenListEmpty;
         }
 
         private static void DrawEmpty(Rect outRect, string text)
@@ -576,7 +582,7 @@ namespace WhatCanISell
             {
                 if (!search.filter.Active)
                 {
-                    DrawEmpty(outRect, "WCIS_NothingElsewhere".Translate(LookWithin));
+                    DrawEmpty(outRect, EmptyText("WCIS_NothingElsewhere".Translate(LookWithin)));
                 }
                 return;
             }
@@ -638,8 +644,8 @@ namespace WhatCanISell
             if (!travelTimes.TryGetValue(buyer, out string text))
             {
                 int ticks = CaravanArrivalTimeEstimator.EstimatedTicksToArrive(map.Tile, buyer.Tile, null);
-                // The game's "days" text carries its own colour; keep it grey like the tile count.
-                text = ticks > 0 ? ticks.ToStringTicksToDays("0.#").StripTags() : "-";
+                // Own text rather than the game's "days" string, which comes with a colour of its own.
+                text = ticks > 0 ? "WCIS_Days".Translate(ticks.TicksToDays().ToString("0.#")).ToString() : "-";
                 travelTimes[buyer] = text;
             }
             return text;
