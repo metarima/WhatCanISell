@@ -18,7 +18,7 @@
   <WCIS_Nothing>Nothing here is wanted by this trader.</WCIS_Nothing>
   <WCIS_NothingInTab>Nothing in this tab.</WCIS_NothingInTab>
   <WCIS_NoColony>You have no colony map to sell from.</WCIS_NoColony>
-  <WCIS_Summary>Selected: {0} items · {1} pawns · {2} kg · est. {3}</WCIS_Summary>
+  <WCIS_Summary>Selected: {0} items · {1} prisoners &amp; slaves · {2} animals · {3} kg · est. {4}</WCIS_Summary>
   <WCIS_TabAll>All</WCIS_TabAll>
   <WCIS_TabItems>Items</WCIS_TabItems>
   <WCIS_TabCaptives>Prisoners &amp; slaves</WCIS_TabCaptives>
@@ -46,6 +46,8 @@
   <WCIS_FormCaravan>Form caravan</WCIS_FormCaravan>
   <WCIS_HostileBanner>Hostile faction: you can't trade here, and a caravan sent here would attack.</WCIS_HostileBanner>
   <WCIS_HostileNoCaravan>This faction is hostile, so a caravan sent here would attack instead of trading.</WCIS_HostileNoCaravan>
+  <WCIS_MovingNow>{0} is on the move. A caravan heads to where it is now and may not find it there.</WCIS_MovingNow>
+  <WCIS_BarterNote>{0} barters instead of paying silver, and values each kind of item differently: from a tenth to double these estimates.</WCIS_BarterNote>
   <WCIS_Favor>{0} favor</WCIS_Favor>
   <WCIS_AutoSuppliesOff>Automatic travel supply selection was turned off so it won't overwrite the food or medicine you chose to sell. Add travel supplies manually.</WCIS_AutoSuppliesOff>
 </LanguageData>

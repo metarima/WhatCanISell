@@ -6,6 +6,9 @@ Things to verify by hand before a release. Restart RimWorld after deploying a ne
 - [x] Friendly settlement shows **Things you can sell** next to *Show what will buy*
 - [x] Vanilla *Things this trader will buy* window has a **Things you can sell** button next to *Close*
 - [x] No button on your own settlements or permanent-enemy factions
+- [ ] VFE Medieval 2 Merchant's guild camp shows **Things you can sell** next to *Show what will buy*, and in its *will buy* window
+- [ ] Merchant's guild window shows how long the camp stays (or that it's on the move) and the barter note
+- [ ] Merchant's guild camps appear as buyers in other settlements' *won't buy* list
 
 ## List
 - [x] Only items the trader buys and you have are listed; silver isn't
@@ -14,6 +17,7 @@ Things to verify by hand before a release. Restart RimWorld after deploying a ne
 - [x] Identical unnamed animals share one row with a count; named, bonded or pregnant ones get their own row
 - [x] Captive rows show the ransom/slavery icon; animal rows show bonded/pregnant/sick/rideable icons
 - [x] Search and *Sort: total value / name* work; search box fully visible
+- [ ] Footer counts items, prisoners & slaves and animals separately
 - [x] Single pawns show a centred checkbox; selected rows stay highlighted
 - [x] With more than one colony, the colony dropdown switches the list
 

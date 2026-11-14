@@ -16,12 +16,12 @@ namespace WhatCanISell
 
     public readonly struct Buyer
     {
-        public readonly Settlement settlement;
+        public readonly WorldObject place;
         public readonly int tiles;
 
-        public Buyer(Settlement settlement, int tiles)
+        public Buyer(WorldObject place, int tiles)
         {
-            this.settlement = settlement;
+            this.place = place;
             this.tiles = tiles;
         }
     }
@@ -90,25 +90,33 @@ namespace WhatCanISell
 
     public static class SellableStock
     {
-        public static bool CanShowFor(Settlement settlement)
+        // A place is any world object you can trade with: vanilla settlements, but also modded ones
+        // that aren't Settlements, such as VFE Medieval 2's Merchant's guild camps.
+        public static ITrader Trader(this WorldObject place)
         {
-            return settlement?.TraderKind != null
-                && settlement.Faction != null
-                && settlement.Faction != Faction.OfPlayer
-                && !settlement.Faction.def.permanentEnemy;
+            return place as ITrader;
         }
 
-        public static bool CanSendCaravanTo(Settlement settlement)
+        public static bool CanShowFor(WorldObject place)
         {
-            return CanShowFor(settlement) && !settlement.Faction.HostileTo(Faction.OfPlayer);
+            return place.Trader()?.TraderKind != null
+                && place.Faction != null
+                && place.Faction != Faction.OfPlayer
+                && !place.Faction.def.permanentEnemy;
         }
 
-        // Splits the colony's sellable stock into what this settlement buys and, in elsewhere, what it doesn't.
-        public static List<SellableEntry> Gather(Map map, Settlement settlement, Pawn negotiator, List<SellableEntry> elsewhere)
+        public static bool CanSendCaravanTo(WorldObject place)
+        {
+            return CanShowFor(place) && !place.Faction.HostileTo(Faction.OfPlayer);
+        }
+
+        // Splits the colony's sellable stock into what this place buys and, in elsewhere, what it doesn't.
+        public static List<SellableEntry> Gather(Map map, WorldObject place, Pawn negotiator, List<SellableEntry> elsewhere)
         {
             var result = new List<SellableEntry>();
             elsewhere.Clear();
-            TraderKindDef kind = settlement?.TraderKind;
+            ITrader trader = place?.Trader();
+            TraderKindDef kind = trader?.TraderKind;
             if (map == null || kind == null)
             {
                 return result;
@@ -124,7 +132,7 @@ namespace WhatCanISell
                 {
                     continue;
                 }
-                if (kind.WillTrade(inner.def) && TradeUtility.PlayerSellableNow(thing, settlement))
+                if (kind.WillTrade(inner.def) && TradeUtility.PlayerSellableNow(thing, trader))
                 {
                     items.Add(thing);
                 }
@@ -143,7 +151,7 @@ namespace WhatCanISell
                 {
                     continue;
                 }
-                if (kind.WillTrade(pawn.def) && TradeUtility.PlayerSellableNow(pawn, settlement))
+                if (kind.WillTrade(pawn.def) && TradeUtility.PlayerSellableNow(pawn, trader))
                 {
                     pawns.Add(pawn);
                 }
@@ -155,7 +163,7 @@ namespace WhatCanISell
 
             AddEntries(result, items, pawns);
             AddEntries(elsewhere, otherItems, otherPawns);
-            UpdatePrices(result, settlement, negotiator);
+            UpdatePrices(result, place, negotiator);
             return result;
         }
 
@@ -201,8 +209,8 @@ namespace WhatCanISell
             }
         }
 
-        // Fills in buyers for the entries the current settlement won't buy and returns those that have any.
-        public static List<SellableEntry> FindBuyers(Map map, Settlement here, List<SellableEntry> candidates, int maxTiles)
+        // Fills in buyers for the entries the current place won't buy and returns those that have any.
+        public static List<SellableEntry> FindBuyers(Map map, WorldObject here, List<SellableEntry> candidates, int maxTiles)
         {
             var result = new List<SellableEntry>();
             if (map == null || candidates.Count == 0)
@@ -210,7 +218,7 @@ namespace WhatCanISell
                 return result;
             }
 
-            List<Buyer> nearby = NearbyTradingSettlements(map, here, maxTiles);
+            List<Buyer> nearby = NearbyTradingPlaces(map, here, maxTiles);
             if (nearby.Count == 0)
             {
                 return result;
@@ -224,13 +232,14 @@ namespace WhatCanISell
                 ThingDef def = any.GetInnerIfMinified().def;
                 foreach (Buyer buyer in nearby)
                 {
-                    TraderKindDef kind = buyer.settlement.TraderKind;
+                    ITrader trader = buyer.place.Trader();
+                    TraderKindDef kind = trader.TraderKind;
                     if (!willTrade.TryGetValue((kind, def), out bool trades))
                     {
                         trades = kind.WillTrade(def);
                         willTrade[(kind, def)] = trades;
                     }
-                    if (trades && TradeUtility.PlayerSellableNow(any, buyer.settlement))
+                    if (trades && TradeUtility.PlayerSellableNow(any, trader))
                     {
                         (entry.buyers ??= new List<Buyer>()).Add(buyer);
                     }
@@ -243,46 +252,56 @@ namespace WhatCanISell
             return result;
         }
 
-        // Settlements a colonist could reach and trade with, within maxTiles of the colony, nearest first.
-        private static List<Buyer> NearbyTradingSettlements(Map map, Settlement here, int maxTiles)
+        // Places a colonist could reach and trade with, within maxTiles of the colony, nearest first.
+        private static List<Buyer> NearbyTradingPlaces(Map map, WorldObject here, int maxTiles)
         {
             var result = new List<Buyer>();
             PlanetTile origin = map.Tile;
-            var byTile = new Dictionary<PlanetTile, Settlement>();
-            foreach (Settlement settlement in Find.WorldObjects.Settlements)
+            // A moving camp can stop on a settlement's tile, so a tile can hold more than one place.
+            var byTile = new Dictionary<PlanetTile, List<WorldObject>>();
+            int remaining = 0;
+            foreach (WorldObject place in Find.WorldObjects.AllWorldObjects)
             {
-                if (settlement != here && settlement.Tile.Layer == origin.Layer && CanSendCaravanTo(settlement))
+                if (place != here && place.Tile.Layer == origin.Layer && CanSendCaravanTo(place))
                 {
-                    byTile[settlement.Tile] = settlement;
+                    if (!byTile.TryGetValue(place.Tile, out List<WorldObject> atTile))
+                    {
+                        byTile[place.Tile] = atTile = new List<WorldObject>();
+                    }
+                    atTile.Add(place);
+                    remaining++;
                 }
             }
-            if (byTile.Count == 0)
+            if (remaining == 0)
             {
                 return result;
             }
 
-            // One breadth-first fill gives the traversal distance to every settlement in range.
-            int remaining = byTile.Count;
+            // One breadth-first fill gives the traversal distance to every place in range.
             origin.Layer.Filler.FloodFill(origin, tile => !Find.World.Impassable(tile), new Predicate<PlanetTile, int>((tile, dist) =>
             {
                 if (dist > maxTiles)
                 {
                     return true;
                 }
-                if (byTile.TryGetValue(tile, out Settlement settlement))
+                if (byTile.TryGetValue(tile, out List<WorldObject> places))
                 {
-                    result.Add(new Buyer(settlement, dist));
-                    return --remaining == 0;
+                    foreach (WorldObject place in places)
+                    {
+                        result.Add(new Buyer(place, dist));
+                    }
+                    remaining -= places.Count;
+                    return remaining == 0;
                 }
                 return false;
             }), Find.WorldGrid.TilesNumWithinTraversalDistance(maxTiles + 1));
 
             List<Pawn> colonists = PotentialNegotiators(map);
-            result.RemoveAll(b => !colonists.Any(p => p.CanTradeWith(b.settlement.Faction, b.settlement.TraderKind).Accepted));
+            result.RemoveAll(b => !colonists.Any(p => p.CanTradeWith(b.place.Faction, b.place.Trader().TraderKind).Accepted));
             return result;
         }
 
-        public static void UpdatePrices(List<SellableEntry> entries, Settlement settlement, Pawn negotiator)
+        public static void UpdatePrices(List<SellableEntry> entries, WorldObject place, Pawn negotiator)
         {
             foreach (SellableEntry entry in entries)
             {
@@ -291,8 +310,8 @@ namespace WhatCanISell
                 entry.marketValue = inner.MarketValue;
                 // Caravan mass usage excludes pawns' own body mass.
                 entry.massEach = entry.IsPawn ? 0f : any.GetStatValue(StatDefOf.Mass);
-                Settlement buyer = PriceSettlement(entry, settlement);
-                entry.sellPrice = EstimateSellPrice(inner, buyer, negotiator);
+                WorldObject buyer = PricePlace(entry, place);
+                entry.sellPrice = EstimateSellPrice(inner, buyer.Trader(), negotiator);
                 entry.available = entry.transferable.GetMaximumToTransfer();
                 entry.availableText = entry.available.ToStringCached();
                 entry.marketText = entry.marketValue.ToStringMoney();
@@ -301,19 +320,19 @@ namespace WhatCanISell
         }
 
         // Entries sold elsewhere are priced at their nearest buyer.
-        public static Settlement PriceSettlement(SellableEntry entry, Settlement settlement)
+        public static WorldObject PricePlace(SellableEntry entry, WorldObject place)
         {
-            return entry.buyers.NullOrEmpty() ? settlement : entry.buyers[0].settlement;
+            return entry.buyers.NullOrEmpty() ? place : entry.buyers[0].place;
         }
 
         // Player-sells side of Tradeable.InitPriceDataIfNeeded, without a TradeSession.
-        public static float EstimateSellPrice(Thing thing, Settlement settlement, Pawn negotiator)
+        public static float EstimateSellPrice(Thing thing, ITrader trader, Pawn negotiator)
         {
-            TraderKindDef kind = settlement.TraderKind;
-            TradeCurrency currency = settlement.TradeCurrency;
+            TraderKindDef kind = trader.TraderKind;
+            TradeCurrency currency = trader.TradeCurrency;
 
             float negotiatorGain = negotiator?.GetStatValue(StatDefOf.TradePriceImprovement) ?? 0f;
-            float settlementGain = settlement.TradePriceImprovementOffsetForPlayer;
+            float settlementGain = trader.TradePriceImprovementOffsetForPlayer;
             float drugBonus = 0f;
             float animalProduceBonus = 0f;
             if (negotiator != null)
@@ -353,10 +372,11 @@ namespace WhatCanISell
 
         // Same rules vanilla uses to pick a caravan's negotiator (BestCaravanPawnUtility, CaravanVisitUtility),
         // limited to colonists the Form Caravan window can send.
-        public static List<Pawn> NegotiatorCandidates(Map map, Settlement settlement)
+        public static List<Pawn> NegotiatorCandidates(Map map, WorldObject place)
         {
+            TraderKindDef kind = place.Trader().TraderKind;
             return PotentialNegotiators(map)
-                .Where(p => p.CanTradeWith(settlement.Faction, settlement.TraderKind).Accepted)
+                .Where(p => p.CanTradeWith(place.Faction, kind).Accepted)
                 .OrderByDescending(p => p.GetStatValue(StatDefOf.TradePriceImprovement))
                 .ToList();
         }
@@ -375,17 +395,17 @@ namespace WhatCanISell
                 .ToList();
         }
 
-        public static string NoNegotiatorReason(Settlement settlement)
+        public static string NoNegotiatorReason(WorldObject place)
         {
-            RoyalTitlePermitDef permit = settlement.TraderKind.permitRequiredForTrading;
+            RoyalTitlePermitDef permit = place.Trader().TraderKind.permitRequiredForTrading;
             return permit != null
                 ? "CommandTradeFailNeedPermit".Translate(permit.LabelCap)
                 : "CommandTradeFailNoNegotiator".Translate();
         }
 
-        public static string FormatPrice(float amount, Settlement settlement)
+        public static string FormatPrice(float amount, WorldObject place)
         {
-            if (settlement.TradeCurrency == TradeCurrency.Favor)
+            if (place.Trader().TradeCurrency == TradeCurrency.Favor)
             {
                 return "WCIS_Favor".Translate(amount.ToString("0.#"));
             }

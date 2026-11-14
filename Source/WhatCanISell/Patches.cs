@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Reflection;
 using HarmonyLib;
 using RimWorld;
 using RimWorld.Planet;
@@ -7,12 +9,38 @@ using Verse;
 
 namespace WhatCanISell
 {
-    [HarmonyPatch(typeof(Settlement), nameof(Settlement.GetGizmos))]
-    public static class Patch_Settlement_GetGizmos
+    // Adds the button to every world object you can trade with, not just Settlement: modded places such as
+    // VFE Medieval 2's Merchant's guild override GetGizmos themselves, so a Settlement patch never sees them.
+    [HarmonyPatch]
+    public static class Patch_TradingPlace_GetGizmos
     {
-        public static IEnumerable<Gizmo> Postfix(IEnumerable<Gizmo> __result, Settlement __instance)
+        private static readonly Dictionary<Type, MethodInfo> MostDerived = new Dictionary<Type, MethodInfo>();
+
+        public static IEnumerable<MethodBase> TargetMethods()
         {
-            bool show = SellableStock.CanShowFor(__instance);
+            var methods = new HashSet<MethodInfo>();
+            foreach (Type type in GenTypes.AllSubclassesNonAbstract(typeof(WorldObject)))
+            {
+                try
+                {
+                    if (typeof(ITrader).IsAssignableFrom(type))
+                    {
+                        methods.Add(GizmosMethod(type));
+                    }
+                }
+                catch (Exception e)
+                {
+                    Log.Warning(WhatCanISellMod.LogPrefix + "Skipped " + type.FullName + ": " + e.Message);
+                }
+            }
+            methods.Remove(null);
+            return methods;
+        }
+
+        public static IEnumerable<Gizmo> Postfix(IEnumerable<Gizmo> __result, WorldObject __instance, MethodBase __originalMethod)
+        {
+            // Overrides that call base would otherwise add the button twice.
+            bool show = Equals(GizmosMethod(__instance.GetType()), __originalMethod) && SellableStock.CanShowFor(__instance);
             bool added = false;
             foreach (Gizmo gizmo in __result)
             {
@@ -29,14 +57,25 @@ namespace WhatCanISell
             }
         }
 
-        private static Command_Action MakeCommand(Settlement settlement)
+        // The GetGizmos that actually runs for this type.
+        private static MethodInfo GizmosMethod(Type type)
+        {
+            if (!MostDerived.TryGetValue(type, out MethodInfo method))
+            {
+                method = AccessTools.Method(type, nameof(WorldObject.GetGizmos), Type.EmptyTypes);
+                MostDerived[type] = method;
+            }
+            return method;
+        }
+
+        private static Command_Action MakeCommand(WorldObject place)
         {
             return new Command_Action
             {
                 defaultLabel = "WCIS_CommandLabel".Translate(),
                 defaultDesc = "WCIS_CommandDesc".Translate(),
                 icon = Textures.ThingsYouCanSell,
-                action = () => Find.WindowStack.Add(new Dialog_ThingsYouCanSell(settlement)),
+                action = () => Find.WindowStack.Add(new Dialog_ThingsYouCanSell(place)),
             };
         }
     }
@@ -49,7 +88,7 @@ namespace WhatCanISell
 
         public static void Postfix(Dialog_SellableItems __instance, Rect rect, ITrader ___trader)
         {
-            if (!(___trader is Settlement settlement) || !SellableStock.CanShowFor(settlement))
+            if (!(___trader is WorldObject place) || !SellableStock.CanShowFor(place))
             {
                 return;
             }
@@ -57,7 +96,7 @@ namespace WhatCanISell
             if (Widgets.ButtonText(button, "WCIS_CommandLabel".Translate()))
             {
                 __instance.Close();
-                Find.WindowStack.Add(new Dialog_ThingsYouCanSell(settlement));
+                Find.WindowStack.Add(new Dialog_ThingsYouCanSell(place));
             }
         }
     }

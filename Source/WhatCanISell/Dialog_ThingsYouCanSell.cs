@@ -11,7 +11,9 @@ namespace WhatCanISell
 {
     public partial class Dialog_ThingsYouCanSell : Window
     {
-        private readonly Settlement settlement;
+        // The settlement, or a modded trading place such as a Merchant's guild camp.
+        private readonly WorldObject place;
+        private readonly List<(string text, Color color)> placeNotes;
         private readonly List<Map> colonyMaps;
         private Map map;
         private Pawn negotiator;
@@ -66,13 +68,14 @@ namespace WhatCanISell
 
         private List<SellableEntry> CurrentList => showElsewhere ? elsewhere : entries;
 
-        public Dialog_ThingsYouCanSell(Settlement settlement)
+        public Dialog_ThingsYouCanSell(WorldObject place)
         {
-            this.settlement = settlement;
+            this.place = place;
             forcePause = true;
             absorbInputAroundWindow = true;
             doCloseX = true;
             closeOnClickedOutside = false;
+            placeNotes = ModdedPlaces.Notes(place);
 
             colonyMaps = Find.Maps.Where(m => m.IsPlayerHome).ToList();
             Map current = Find.CurrentMap;
@@ -84,9 +87,9 @@ namespace WhatCanISell
             map = newMap;
             // Travel times are measured from the colony, so they don't carry over to another one.
             travelTimes.Clear();
-            negotiator = SellableStock.NegotiatorCandidates(map, settlement).FirstOrDefault();
+            negotiator = SellableStock.NegotiatorCandidates(map, place).FirstOrDefault();
             negotiatorLabel = null;
-            entries = SellableStock.Gather(map, settlement, negotiator, elsewhereCandidates);
+            entries = SellableStock.Gather(map, place, negotiator, elsewhereCandidates);
             UpdateBuyers();
             scrollPosition = Vector2.zero;
         }
@@ -95,8 +98,8 @@ namespace WhatCanISell
         {
             negotiator = pawn;
             negotiatorLabel = null;
-            SellableStock.UpdatePrices(entries, settlement, negotiator);
-            SellableStock.UpdatePrices(elsewhere, settlement, negotiator);
+            SellableStock.UpdatePrices(entries, place, negotiator);
+            SellableStock.UpdatePrices(elsewhere, place, negotiator);
             dirty = true;
         }
 
@@ -134,8 +137,8 @@ namespace WhatCanISell
                 }, tab == which));
             }
 
-            buysLabel = "WCIS_ModeBuys".Translate(settlement.LabelCap, entries.Count);
-            wontBuyLabel = "WCIS_ModeWontBuy".Translate(settlement.LabelCap, elsewhere.Count);
+            buysLabel = "WCIS_ModeBuys".Translate(place.LabelCap, entries.Count);
+            wontBuyLabel = "WCIS_ModeWontBuy".Translate(place.LabelCap, elsewhere.Count);
         }
 
         private static bool InTab(SellableEntry entry, Tab which)
@@ -164,26 +167,30 @@ namespace WhatCanISell
             float y = 0f;
             Text.Font = GameFont.Medium;
             Text.Anchor = TextAnchor.MiddleLeft;
-            Widgets.Label(new Rect(0f, y, inRect.width - 30f, 35f), "WCIS_Title".Translate(settlement.LabelCap));
+            Widgets.Label(new Rect(0f, y, inRect.width - 30f, 35f), "WCIS_Title".Translate(place.LabelCap));
             y += 36f;
 
             Text.Font = GameFont.Small;
-            string subtitle = settlement.Faction.Name;
-            string traderLabel = settlement.TraderKind.LabelCap;
+            string subtitle = place.Faction.Name;
+            string traderLabel = place.Trader().TraderKind.LabelCap;
             if (!traderLabel.NullOrEmpty())
             {
                 subtitle += " · " + traderLabel;
             }
             DrawLine(ref y, inRect.width, subtitle, Color.gray);
-            if (!SellableStock.CanSendCaravanTo(settlement))
+            if (!SellableStock.CanSendCaravanTo(place))
             {
                 DrawLine(ref y, inRect.width, "WCIS_HostileBanner".Translate(), ColorLibrary.RedReadable);
             }
-            RoyalTitleDef titleRequired = settlement.TraderKind.TitleRequiredToTrade;
+            RoyalTitleDef titleRequired = place.Trader().TraderKind.TitleRequiredToTrade;
             if (titleRequired != null)
             {
                 DrawLine(ref y, inRect.width, "WCIS_RequiresTitle".Translate(titleRequired.GetLabelCapForBothGenders()),
                     negotiator == null ? ColorLibrary.RedReadable : Color.gray);
+            }
+            foreach ((string text, Color color) in placeNotes)
+            {
+                DrawLine(ref y, inRect.width, text, color);
             }
 
             y += 6f;
@@ -241,7 +248,7 @@ namespace WhatCanISell
                 : "WCIS_NoNegotiator".Translate().ToString();
             if (Widgets.ButtonText(negotiatorRect, negotiatorLabel))
             {
-                List<Pawn> candidates = SellableStock.NegotiatorCandidates(map, settlement);
+                List<Pawn> candidates = SellableStock.NegotiatorCandidates(map, place);
                 if (candidates.Any())
                 {
                     Find.WindowStack.Add(new FloatMenu(candidates.Select(p => new FloatMenuOption(NegotiatorLabel(p), () => SetNegotiator(p))).ToList()));
@@ -251,7 +258,7 @@ namespace WhatCanISell
             {
                 TooltipHandler.TipRegion(negotiatorRect, negotiator != null
                     ? "WCIS_NegotiatorTip".Translate()
-                    : SellableStock.NoNegotiatorReason(settlement));
+                    : SellableStock.NoNegotiatorReason(place));
             }
             x += negotiatorRect.width + 8f;
 
@@ -276,7 +283,7 @@ namespace WhatCanISell
             return pawn.LabelShortCap + " (" + pawn.GetStatValue(StatDefOf.TradePriceImprovement).ToStringPercent() + ")";
         }
 
-        // Two lists rather than more tabs: what this settlement buys, and what it won't (with who will).
+        // Two lists rather than more tabs: what this place buys, and what it won't (with who will).
         private void DrawModes(Rect rect)
         {
             float width = Mathf.Min(320f, (rect.width - 8f) / 2f);
@@ -301,7 +308,7 @@ namespace WhatCanISell
             }
             if (Mouse.IsOver(rect))
             {
-                TooltipHandler.TipRegion(rect, tipKey.Translate(settlement.LabelCap));
+                TooltipHandler.TipRegion(rect, tipKey.Translate(place.LabelCap));
             }
         }
 
@@ -329,7 +336,7 @@ namespace WhatCanISell
         private void DrawSellRow(Rect row, SellableEntry entry, int index)
         {
             float width = row.width;
-            DrawRowStart(row, entry, index, SellColumns.Start(width, ColAvailable), settlement);
+            DrawRowStart(row, entry, index, SellColumns.Start(width, ColAvailable), place);
 
             Text.Anchor = TextAnchor.MiddleRight;
             Widgets.Label(SellColumns.Rect(row, width, ColAvailable), entry.availableText);
@@ -362,7 +369,7 @@ namespace WhatCanISell
             Rect totalRect = SellColumns.Rect(row, width, ColTotal);
             if (entry.Selected > 0)
             {
-                Widgets.Label(totalRect, SellableStock.FormatPrice(entry.sellPrice * entry.Selected, settlement));
+                Widgets.Label(totalRect, SellableStock.FormatPrice(entry.sellPrice * entry.Selected, place));
             }
             else
             {
@@ -412,7 +419,7 @@ namespace WhatCanISell
         }
 
         // Highlight, info card, icon, pawn icons and the label up to labelEnd.
-        private void DrawRowStart(Rect row, SellableEntry entry, int index, float labelEnd, Settlement trader)
+        private void DrawRowStart(Rect row, SellableEntry entry, int index, float labelEnd, WorldObject trader)
         {
             TransferableOneWay trad = entry.transferable;
             Thing thing = trad.AnyThing;
@@ -437,7 +444,7 @@ namespace WhatCanISell
                 Widgets.BeginGroup(row);
                 Rect local = row.AtZero();
                 TransferableUIUtility.DoExtraIcons(trad, local, ref curX);
-                TransferableUIUtility.DrawCaptiveTradeInfo(trad, trader, local, ref curX);
+                TransferableUIUtility.DrawCaptiveTradeInfo(trad, trader.Trader(), local, ref curX);
                 Widgets.EndGroup();
             }
 
@@ -453,7 +460,8 @@ namespace WhatCanISell
         private void DrawBottom(Rect rect)
         {
             int itemCount = 0;
-            int pawnCount = 0;
+            int captiveCount = 0;
+            int animalCount = 0;
             float mass = 0f;
             float value = 0f;
             foreach (SellableEntry entry in entries)
@@ -463,13 +471,11 @@ namespace WhatCanISell
                 {
                     continue;
                 }
-                if (entry.IsPawn)
+                switch (entry.kind)
                 {
-                    pawnCount += selected;
-                }
-                else
-                {
-                    itemCount += selected;
+                    case SellableKind.Captive: captiveCount += selected; break;
+                    case SellableKind.Animal: animalCount += selected; break;
+                    default: itemCount += selected; break;
                 }
                 mass += entry.massEach * selected;
                 value += entry.sellPrice * selected;
@@ -477,7 +483,8 @@ namespace WhatCanISell
 
             Text.Anchor = TextAnchor.MiddleLeft;
             Widgets.Label(new Rect(rect.x, rect.y, rect.width, 26f),
-                "WCIS_Summary".Translate(itemCount.ToStringCached(), pawnCount.ToStringCached(), mass.ToString("0.#"), SellableStock.FormatPrice(value, settlement)));
+                "WCIS_Summary".Translate(itemCount.ToStringCached(), captiveCount.ToStringCached(), animalCount.ToStringCached(),
+                    mass.ToString("0.#"), SellableStock.FormatPrice(value, place)));
             Text.Anchor = TextAnchor.UpperLeft;
 
             float buttonY = rect.yMax - BottomButtonSize.y;
@@ -526,14 +533,14 @@ namespace WhatCanISell
             {
                 return "WCIS_NoColony".Translate();
             }
-            // A caravan sent to a hostile settlement takes the first available arrival action there, which is "attack".
-            if (!SellableStock.CanSendCaravanTo(settlement))
+            // A caravan sent to a hostile place takes the first available arrival action there, which is "attack".
+            if (!SellableStock.CanSendCaravanTo(place))
             {
                 return "WCIS_HostileNoCaravan".Translate();
             }
             if (negotiator == null)
             {
-                return SellableStock.NoNegotiatorReason(settlement);
+                return SellableStock.NoNegotiatorReason(place);
             }
             return null;
         }
@@ -546,7 +553,7 @@ namespace WhatCanISell
                 .ToList();
             selections.Add((new List<Thing> { negotiator }, 1));
             Close(doCloseSound: false);
-            FormCaravanPrefill.Open(map, settlement, selections);
+            FormCaravanPrefill.Open(map, place, selections);
         }
 
         // Fixed-width columns laid out from the right edge of a row.

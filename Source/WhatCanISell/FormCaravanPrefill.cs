@@ -13,7 +13,7 @@ namespace WhatCanISell
         private class Pending
         {
             public Dialog_FormCaravan dialog;
-            public Settlement destination;
+            public WorldObject destination;
             public List<(List<Thing> things, int count)> selections;
         }
 
@@ -25,7 +25,7 @@ namespace WhatCanISell
         private static readonly Action<Dialog_FormCaravan> NotifyTransferablesChanged =
             AccessTools.MethodDelegate<Action<Dialog_FormCaravan>>(AccessTools.Method(typeof(Dialog_FormCaravan), "Notify_TransferablesChanged"));
 
-        public static void Open(Map map, Settlement destination, List<(List<Thing> things, int count)> selections)
+        public static void Open(Map map, WorldObject destination, List<(List<Thing> things, int count)> selections)
         {
             var dialog = new Dialog_FormCaravan(map);
             pending = new Pending { dialog = dialog, destination = destination, selections = selections };
@@ -108,7 +108,7 @@ namespace WhatCanISell
         // Set the route directly instead of relying on the route planner's Accept button:
         // leaving the planner any other way, or mods that send without a route (Instant Caravan),
         // would otherwise form a caravan with no destination.
-        private static void SetDestination(Dialog_FormCaravan dialog, Settlement destination)
+        private static void SetDestination(Dialog_FormCaravan dialog, WorldObject destination)
         {
             if (destination == null || destination.Destroyed)
             {

@@ -39,6 +39,7 @@ Your picks, the exact animals you chose and your negotiator are selected, and th
 [h1]Compatibility[/h1]
 - Requires [url=https://steamcommunity.com/sharedfiles/filedetails/?id=2009463077]Harmony[/url]
 - Works with modded factions and traders
+- Works with VFE Medieval 2's Merchant's guild (notes when it's about to move, and that its barter prices vary)
 - Works with Instant Caravan
 - Items already in caravans or colonists' inventories aren't counted
 

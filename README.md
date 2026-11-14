@@ -4,7 +4,7 @@ A RimWorld 1.7 mod. On the world map, a settlement's vanilla **"Show what will b
 
 ## Features
 
-- **"Things you can sell" gizmo.** It sits next to "Show what will buy" on any non-player, non-permanent-enemy settlement that trades. The vanilla "Things this trader will buy" window gets the same button next to *Close*.
+- **"Things you can sell" gizmo.** It sits next to "Show what will buy" on any non-player, non-permanent-enemy settlement that trades, including modded trading places that aren't settlements, such as VFE Medieval 2's Merchant's guild camps. The vanilla "Things this trader will buy" window gets the same button next to *Close*.
 - **Trade-style list** of the items, prisoners, slaves and animals in your colony that this trader buys, split into tabs (All / Items / Prisoners & slaves / Animals). For each row you see:
   - how many you have in storage
   - market value
@@ -56,7 +56,8 @@ Languages/English/Keyed/WhatCanISell.xml UI strings
 Textures/UI/Commands/                   settlement button icon
 Source/WhatCanISell/
   WhatCanISellMod.cs          entry point, applies Harmony patches
-  Patches.cs                  settlement gizmo + button in vanilla "will buy" window
+  Patches.cs                  gizmo on trading places + button in vanilla "will buy" window
+  ModdedPlaces.cs             notes for modded trading places (moving camps, barter)
   Textures.cs                 loads the button icon
   SellableStock.cs            gathers sellable colony items, estimates prices
   Dialog_ThingsYouCanSell.cs  the window and its "buys" list

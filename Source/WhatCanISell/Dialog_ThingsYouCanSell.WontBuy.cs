@@ -8,13 +8,13 @@ using Verse;
 
 namespace WhatCanISell
 {
-    // The "won't buy" list: things this settlement turns down, and the nearest settlements that take them.
+    // The "won't buy" list: things this place turns down, and the nearest settlements that take them.
     public partial class Dialog_ThingsYouCanSell
     {
         private bool showElsewhere;
         private readonly List<SellableEntry> elsewhereCandidates = new List<SellableEntry>();
         private List<SellableEntry> elsewhere = new List<SellableEntry>();
-        private readonly Dictionary<Settlement, string> travelTimes = new Dictionary<Settlement, string>();
+        private readonly Dictionary<WorldObject, string> travelTimes = new Dictionary<WorldObject, string>();
 
         private static readonly int[] LookWithinPresets = { 10, 25, 50, 100, 200 };
 
@@ -26,8 +26,8 @@ namespace WhatCanISell
 
         private void UpdateBuyers()
         {
-            elsewhere = SellableStock.FindBuyers(map, settlement, elsewhereCandidates, LookWithin);
-            SellableStock.UpdatePrices(elsewhere, settlement, negotiator);
+            elsewhere = SellableStock.FindBuyers(map, place, elsewhereCandidates, LookWithin);
+            SellableStock.UpdatePrices(elsewhere, place, negotiator);
             dirty = true;
         }
 
@@ -58,7 +58,7 @@ namespace WhatCanISell
 
             GUI.color = Color.gray;
             Text.Anchor = TextAnchor.MiddleLeft;
-            Widgets.Label(new Rect(rect.x + LabelX, rect.y, rangeRect.x - rect.x - LabelX - 8f, ControlsHeight), "WCIS_ElsewhereHint".Translate(settlement.LabelCap));
+            Widgets.Label(new Rect(rect.x + LabelX, rect.y, rangeRect.x - rect.x - LabelX - 8f, ControlsHeight), "WCIS_ElsewhereHint".Translate(place.LabelCap));
 
             Rect header = new Rect(rect.x, rangeRect.yMax + 6f, width, HeaderHeight);
             Widgets.Label(new Rect(rect.x + LabelX, header.y, BuyerColumns.Start(width, ColBuyerAvailable) - LabelX, HeaderHeight), "WCIS_ColItem".Translate());
@@ -76,7 +76,7 @@ namespace WhatCanISell
         private void DrawWontBuyRow(Rect row, SellableEntry entry, int index)
         {
             float width = row.width;
-            Settlement nearest = entry.buyers[0].settlement;
+            WorldObject nearest = entry.buyers[0].place;
             DrawRowStart(row, entry, index, BuyerColumns.Start(width, ColBuyerAvailable), nearest);
 
             Text.Anchor = TextAnchor.MiddleRight;
@@ -109,8 +109,8 @@ namespace WhatCanISell
             }
         }
 
-        // Pathfinding is the costly part, so it runs once per settlement and only for buyers actually on screen.
-        private string TravelTime(Settlement buyer)
+        // Pathfinding is the costly part, so it runs once per place and only for buyers actually on screen.
+        private string TravelTime(WorldObject buyer)
         {
             if (!travelTimes.TryGetValue(buyer, out string text))
             {
@@ -128,14 +128,14 @@ namespace WhatCanISell
             sb.Append("WCIS_BuyersTip".Translate(LookWithin));
             foreach (Buyer buyer in entry.buyers.Take(MaxListed))
             {
-                sb.Append("\n  ").Append(buyer.settlement.LabelCap).Append(" (").Append(buyer.settlement.Faction.Name).Append(") · ")
+                sb.Append("\n  ").Append(buyer.place.LabelCap).Append(" (").Append(buyer.place.Faction.Name).Append(") · ")
                     .Append("WCIS_Tiles".Translate(buyer.tiles));
             }
             if (entry.buyers.Count > MaxListed)
             {
                 sb.Append("\n  ...");
             }
-            sb.Append("\n\n").Append("WCIS_OpenBuyer".Translate(entry.buyers[0].settlement.LabelCap));
+            sb.Append("\n\n").Append("WCIS_OpenBuyer".Translate(entry.buyers[0].place.LabelCap));
             return sb.ToString();
         }
     }
